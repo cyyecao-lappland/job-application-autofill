@@ -16,6 +16,7 @@ def field_value(field):
     # not an empty field, and a select's search box is not its selected value.
     if field.get("readStatus") in {"unknown", "redacted", "unavailable", "conflict"}:
         return None
+    # 下拉的搜索输入、菜单文字都不等于选中值；缺少明确选中证据就返回未知。
     if "selectedValue" in field:
         return None if field["selectedValue"] is None else text(field["selectedValue"])
     if "select" in field or field.get("kind") == "select" or field.get("type") == "select":
@@ -51,6 +52,8 @@ def compare(plan, snapshot, evidence):
     requested_evidence = evidence
     capture = snapshot.get("capture", {})
     receipt = capture.get("saveReceipt", {})
+    # reloaded 标签本身不是保存证据；要求保存、重开、读取记录同时存在。
+    # 这里只检查调用者提供的记录是否齐备，并不向网站验证其真实性。
     persistence_recorded = (capture.get("stage") == "after-reopen" and
                             bool(capture.get("readCallId")) and bool(capture.get("reopenCallId")) and
                             receipt.get("status") == "saved" and bool(receipt.get("callId")) and
@@ -73,6 +76,7 @@ def compare(plan, snapshot, evidence):
             result.append({**row, "status": "unverified", "reason": "Expected source value is unknown; do not infer empty."})
             continue
         scope = fields
+        # 先定位唯一经历，再在该记录内找字段；不能在全页取第一个同名标签。
         if anchor:
             if any(f["label"] == anchor["label"] and field_value(f) is None for f in fields):
                 result.append({**row, "status": "anchor-unverified"})
@@ -92,6 +96,7 @@ def compare(plan, snapshot, evidence):
             result.append({**row, "status": "field-missing" if not candidates else "field-ambiguous"})
             continue
         actual = field_value(candidates[0])
+        # 未读到值不能当作空字符串，否则未知字段会被误判为匹配或需要重填。
         if actual is None:
             result.append({**row, "status": "unverified",
                            "reason": "Current value is unavailable or conflicting; do not infer empty or replay a write."})
