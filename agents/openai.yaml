@@ -1,0 +1,4 @@
+interface:
+  display_name: "网申快速回填"
+  short_description: "读取完整履历并实际填写，保留授权与进度，分模块保存并核验结果"
+  default_prompt: "使用 $job-application-autofill，读取完整 JSON 和当前表单，沿用已有授权，通过可用浏览器工具实际填写并回读，按模块保存已授权内容，保留进度并交接真正的缺项。"

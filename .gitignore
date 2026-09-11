@@ -1,0 +1,25 @@
+# Private application data and local evidence
+private/
+evidence-private/
+career-library/
+runs/
+.env
+.env.*
+!.env.example
+autofill-profile.json
+alignment-plan.json
+before.json
+after*.json
+preflight.json
+execution-state.json
+execution-state.lock
+connection-state.json
+handoff.md
+batch.js
+*.log
+*.pdf
+*.docx
+__pycache__/
+*.py[cod]
+node_modules/
+.DS_Store

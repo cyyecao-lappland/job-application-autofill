@@ -1,0 +1,42 @@
+{
+  "example_only": true,
+  "notice": "所有示例经历均为虚构，不能用于真实投递。",
+  "basic": {
+    "name": null,
+    "email": null,
+    "phone": null
+  },
+  "education": [],
+  "internships": [],
+  "projects": [
+    {
+      "record_id": "project-example-001",
+      "name": "虚构示例：文档检索原型",
+      "start_date": "2025-03",
+      "end_date": "2025-06",
+      "description": "实现文档解析与检索接口，编写功能测试。无可核验的效果指标。",
+      "source": "虚构示例，仅说明格式"
+    }
+  ],
+  "research": [],
+  "competitions": [],
+  "awards": [],
+  "campus": [],
+  "skills": [],
+  "field_metadata": {
+    "basic.name": {
+      "status": "unknown"
+    },
+    "education": {
+      "status": "unknown"
+    }
+  },
+  "autofill_policy": {
+    "identity_numbers": "user_enters_manually",
+    "missing_facts": "ask_user"
+  },
+  "presentation_policy": {
+    "preserve_publication_status": true,
+    "preserve_date_precision": true
+  }
+}
