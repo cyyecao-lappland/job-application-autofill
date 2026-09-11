@@ -35,7 +35,7 @@ git clone https://github.com/cyyecao-lappland/job-application-autofill.git "$HOM
 
 ### 2. 准备个人资料
 
-将 [示例 JSON](examples/autofill-profile.example.json) 复制到**仓库外**的私有工作目录：
+下载 [空白 JSON 模板](templates/autofill-profile.template.json)，另存为 `autofill-profile.json`，放到**仓库外**的私有工作目录：
 
 ```text
 job-applications/
@@ -43,7 +43,7 @@ job-applications/
   runs/                          # 每次申请的计划、快照和进度
 ```
 
-替换所有虚构记录，核对后设置 `example_only: false`。每条经历保留记录 ID、事实来源、真实日期和正文；未知值用 `null`，不补造事实。字段与各类经历的写法见 [JSON 资料教程](references/profile-format.md)。
+模板已列出基本信息、教育、实习、项目、论文、竞赛、奖项、校园经历、技能和语言字段。将 `null` 换成真实值；多段经历复制记录并使用不同 ID，不用的占位记录删除。填写后同步更新 `field_metadata`，核对后设置 `example_only: false`。写法参考 [虚构示例](examples/autofill-profile.example.json) 和 [JSON 资料教程](references/profile-format.md)。
 
 已有简历但没有 JSON，可以先让助手整理：
 
