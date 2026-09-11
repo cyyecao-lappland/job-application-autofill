@@ -8,7 +8,17 @@
 
 ## 文件位置和加载顺序
 
-把 [虚构示例](../examples/autofill-profile.example.json) 复制到公开仓库之外的工作目录，例如 `job-applications/private/autofill-profile.json`，替换示例记录并自行核对后设置 `example_only: false`。
+下载 [空白模板](../templates/autofill-profile.template.json)，保存为公开仓库之外的 `job-applications/private/autofill-profile.json`。[虚构示例](../examples/autofill-profile.example.json) 仅供参考写法。
+
+模板每类经历预留一条记录，事实字段均为 `null`：
+
+1. 有这类经历：填写真实值与 `source`；多条经历复制对象，并为每条设置唯一 `record_id`。
+2. 确认没有：删除该类所有占位记录，保留 `[]`，将对应 `field_metadata` 状态改为 `confirmed_none`。
+3. 尚未整理：删除空占位记录，保留 `[]` 和 `unknown`，不要将占位 ID 当作真实经历。
+4. 已核对的类别可将状态改为 `confirmed`；其中仍缺失的字段用更具体的路径标为 `unknown`，例如 `basic.phone`。
+5. 按真实精度填写日期；GPA 要说明满分，作者顺序和研究状态单独核对。核对后将 `example_only` 改为 `false`，删除模板告示并填写实际更新日期。
+
+`is_current` 填 JSON 布尔值 `true` / `false` 或未知值 `null`；来源、日期、说明等按实际内容填写字符串。`related_competition_id` 只引用确实存在的竞赛记录 ID，没有关联就保留 `null`。
 
 查找顺序与 SKILL.md 一致：用户明确路径 → 宿主可见的 `JOB_APPLICATION_PROFILE` → 当前任务目录的 `private/autofill-profile.json`。找不到就询问位置，不搜索无关个人目录。环境变量是 agent 的读取约定，不是 Python 脚本的自动配置。
 
