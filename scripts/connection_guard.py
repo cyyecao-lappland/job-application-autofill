@@ -40,6 +40,7 @@ def transition(state, action, data):
             raise Rejected("Unsupported or repeated route")
         if not data.get("tabId") or not target_matches(state["target"], data):
             raise Rejected("Candidate does not match the intended browser/page")
+        # reserve 先记录 pending，update 落盘后才返回派发许可；中断不清零尝试次数。
         state["attempts"].append({"id": len(state["attempts"]) + 1,
                                   "route": route, "tabId": data["tabId"],
                                   "status": "pending"})
@@ -70,6 +71,7 @@ def transition(state, action, data):
 @contextmanager
 def locked(root):
     root.mkdir(parents=True, exist_ok=True)
+    # 互斥范围仅是本运行目录的状态文件，不代表取得了浏览器标签页的独占权。
     lock = root / "connection-state.lock"
     try:
         fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -91,6 +93,7 @@ def update(root, action, data):
                 raise Rejected("Missing state")
             return state
         state = transition(state, action, data)
+        # 同目录临时文件写完并刷盘后替换，避免下一次读取到半份 JSON。
         fd, temporary = tempfile.mkstemp(prefix="connection-state-", suffix=".tmp", dir=root)
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as stream:
