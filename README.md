@@ -1,4 +1,4 @@
-# Job Application Autofill · 网申回填 Skill
+# Job Application Autofill · 网申 Skill
 
 从你自己的私有履历 JSON 出发，在真实招聘网站上勘察表单、独立核验规则、批量填写、独立核验内容，并按模块暂存。
 
