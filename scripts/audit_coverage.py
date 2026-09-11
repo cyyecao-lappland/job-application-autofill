@@ -39,6 +39,7 @@ def audit(plan):
     for key, item in requirements.items():
         if not item.get("text"):
             errors.append(f"{key}: requirement text missing")
+    # 从完整盘点反查覆盖表，避免只检查已选条目而漏掉未处理的经历。
     inventory = index(plan.get("inventory", []), "inventory")
     if not inventory:
         errors.append("No experience inventory recorded")
@@ -73,6 +74,7 @@ def audit(plan):
         for req in links:
             if req not in requirements:
                 errors.append(f"{key}: unknown JD requirement {req}")
+        # 标为呈现的经历必须落到实际操作；只有描述性理由不算有填写去向。
         if decision in PRESENTED:
             if not row.get("operationIds"):
                 errors.append(f"{key}: selected content has no destination")
@@ -86,6 +88,7 @@ def audit(plan):
             target = row.get("mergeInto")
             if target == key or target not in coverage or coverage[target].get("decision") not in PRESENTED:
                 errors.append(f"{key}: invalid merge target")
+    # 除自引用外，也拒绝 A → B → A 等间接合并循环。
     for key in coverage:
         seen, current = set(), key
         while current in coverage and coverage[current].get("decision") == "merge":

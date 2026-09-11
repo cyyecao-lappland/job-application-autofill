@@ -21,6 +21,7 @@ def assess_readiness(plan, batch, now_ms):
     errors = []
     automatic = {o.get("id"): o for o in targets(plan)
                  if o.get("action") in {"fill", "add-record"}}
+    # 全量计划可跨批次保留，但定位证据只需覆盖本次真正派发的目标。
     requested = execution.get("dispatchIds", list(automatic))
     if not requested:
         errors.append("No automatic targets; this is a handoff plan")
@@ -51,6 +52,7 @@ def assess_readiness(plan, batch, now_ms):
     for key in requested:
         op, row = automatic.get(key, {}), indexed.get(key, {})
         expected_count = 0 if op.get("action") == "add-record" else 1
+        # 恢复时当前值可能已是目标值；允许这种探测结果，交执行器跳过已完成项。
         already_matches = row.get("count") == 1 and row.get("value") == op.get("value")
         before_matches = row.get("count") == expected_count and row.get("value") == op.get("before")
         if (not (already_matches or before_matches) or row.get("kind") != op.get("kind") or
@@ -113,6 +115,7 @@ def check(plan, snapshot, batch=None, handoff=None, now_ms=None):
             errors.append(f"{key}: choose one approved input path")
         if not op.get("methodEvidence"):
             errors.append(f"{key}: observed method evidence missing")
+        # 复杂控件的显示值可能未进入站点表单状态，因此要求曾验证保存的方法。
         if op.get("kind") in COMPLEX and not op.get("savedMethodEvidence"):
             errors.append(f"{key}: complex field lacks prior saved verification; use manual")
         if plan.get("jd", {}).get("status") == "unavailable" and op.get("scope") != "basic" and not execution.get("generalProfileBasis"):
@@ -121,6 +124,7 @@ def check(plan, snapshot, batch=None, handoff=None, now_ms=None):
         if token in seen:
             errors.append(f"{key}: duplicate write target")
         seen.add(token)
+        # 新记录必须先建立锚点，再填写其子字段，避免把值写进另一条同名记录。
         dependency = op.get("dependsOn")
         creation = by_id.get(dependency, {})
         if dependency and (creation.get("action") != "add-record" or ops.index(creation) >= ops.index(op)):
@@ -161,6 +165,8 @@ def check(plan, snapshot, batch=None, handoff=None, now_ms=None):
                 errors.append(f"{mid}: unknown or multiply assigned operation {key}")
             assigned.add(key)
     readiness, dispatch_ids = assess_readiness(plan, batch, now_ms if now_ms is not None else int(time.time() * 1000))
+    # planReady 是计划结构通过；ready 还要求本批真实调用证据齐备。
+    # checkedPlan/checkedBatch 供执行入口比对，不能证明证据真实或已完成独立核验。
     return {"schemaVersion": 2, "planReady": not errors,
             "ready": not errors and not readiness, "runId": plan.get("runId"), "errors": errors,
             "executionErrors": readiness, "dispatchIds": dispatch_ids,

@@ -1,6 +1,7 @@
 /* Host-neutral execution. Only use with a real, supported adapter and durable
  * checkpoint callback. Does not connect to a browser or grant authorization. */
 const clone = value => JSON.parse(JSON.stringify(value));
+// 恢复时比对稳定的工作目标；探测、批次范围和定位修复可更新，事实与原预算不可偷换。
 function workflow(plan) {
   const copy = clone(plan);
   delete copy.execution.probe;
@@ -61,11 +62,13 @@ async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, 
   state.status = 'running';
   delete state.reason;
   let storageFailed = false;
+  // 无法可靠保存进度就停止；否则重启后无法判断上次写入是否已发生。
   const checkpoint = async () => {
     try { await adapter.checkpoint(clone(state)); return true; }
     catch { storageFailed = true; state.status = 'halted'; state.reason = 'state-write-failed'; return false; }
   };
   const halt = reason => { state.status = 'halted'; state.reason = reason; };
+  // 使用最初准备时间计算剩余预算，续作和拆分批次不会重新获得完整时限。
   const left = (limit = timeout) => {
     const remaining = budget - (now() - state.startedAt);
     if (remaining <= 0) { halt('budget-exhausted'); return 0; }
@@ -97,6 +100,8 @@ async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, 
   const selected = new Set(preflight.dispatchIds || []);
   const byId = Object.fromEntries(operations.map(op => [op.id, op]));
   if (!await checkpoint() || !left()) return state;
+  // pendingCall 表示远程调用可能仍在运行；先确认其结束，再发起新的页面读取。
+  // pendingWrite/pendingSave 则记录调用结束后仍需核对的业务结果。
   if (state.pendingCall) {
     let confirmation;
     try { confirmation = await adapter.confirmSettled?.(clone(state.pendingCall)); }
@@ -137,6 +142,7 @@ async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, 
     if (matches(op, current)) {
       state.results[op.id] = {status: 'written', evidence: 'page', reconciled: true};
       state.pendingWrite = null;
+    // 部分新增只允许找回自己创建的同一条空记录；名称或位置不足以证明身份。
     } else if (previous?.status === 'partial' && previous.recordRef &&
                current?.count === 1 && current.value === '' && current.recordRef === previous.recordRef &&
                current.owned === true && typeof adapter.completeRecord === 'function') {
@@ -186,6 +192,7 @@ async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, 
       if (!await checkpoint()) break;
       continue;
     }
+    // 已尝试过的字段发生变化时交接冲突，避免恢复流程覆盖用户的手工修改。
     if (previous?.status === 'written' || previous?.status === 'written-unverified' || state.writeAttempts[op.id]) {
       state.results[op.id] = {status: 'conflict', reason: 'previously-written-value-changed'};
       if (!await checkpoint()) break;
@@ -211,6 +218,7 @@ async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, 
       if (!await checkpoint()) break;
       continue;
     }
+    // 先持久化写入意图再调用网页；即使调用后进程中断，下次也必须先核对而非重放。
     state.pendingWrite = op.id;
     state.pendingCall = {kind:'write',id:op.id};
     state.results[op.id] = {status: 'attempted'};
@@ -226,6 +234,7 @@ async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, 
     let outcome;
     try { outcome = await adapter.write(op, {timeoutMs: left()}); }
     catch (error) { outcome = {status: 'unknown',settled:settledReadError(error)}; }
+    // 只有明确结束且确认无副作用的失败才可清除未决标记；抛异常本身不够。
     if (outcome?.status === 'failed' && outcome.noEffect === true && outcome.settled === true) {
       state.pendingWrite = null;
       state.pendingCall = null;
@@ -296,6 +305,7 @@ async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, 
         if (!await checkpoint()) break;
         continue;
       }
+      // 同一版本的必填校验失败不再点击保存；需现场状态变化后才允许重试。
       if (state.modules[module.id]?.status === 'validation-failed' &&
           state.modules[module.id].revision === inspection.revision) continue;
       if (!left(saveTimeout)) break;
@@ -334,6 +344,7 @@ async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, 
       if (!await checkpoint() || state.status === 'halted') break;
     }
   }
+  // completed 仅表示执行循环结束；仍要查看逐项结果和模块状态，不能称整份申请已提交。
   if (state.status === 'running') state.status = 'completed';
   for (const op of operations) state.results[op.id] ||= {
     status: ['fill', 'add-record'].includes(op.action) ? 'not-attempted' : op.action,

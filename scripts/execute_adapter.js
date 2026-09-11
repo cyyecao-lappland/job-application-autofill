@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {runBoundedBatch} = require('./bounded_batch.js');
 
+// 先写同目录临时文件，再替换状态文件；避免写到一半中断破坏原有进度。
 function atomicJson(filename, value) {
   const temporary = filename + '.' + process.pid + '.tmp';
   let descriptor;
@@ -22,6 +23,7 @@ function atomicJson(filename, value) {
 async function executeAdapter({runDirectory, host, now = Date.now, options = {}}) {
   const root = path.resolve(runDirectory);
   const lockPath = path.join(root, 'execution-state.lock');
+  // 排他创建锁：同一运行目录不能同时恢复两次，否则可能重复派发网页动作。
   const lock = fs.openSync(lockPath, 'wx');
   try {
     const read = name => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8').replace(/^\uFEFF/, ''));
@@ -32,6 +34,7 @@ async function executeAdapter({runDirectory, host, now = Date.now, options = {}}
         plan.execution?.driver?.mode !== 'adapter') throw new Error('Current adapter-mode preflight required');
     const filename = path.join(root, 'batch.js');
     const source = fs.readFileSync(filename, 'utf8').replace(/^\uFEFF/, '');
+    // 必须执行预检时的同一份代码；这只是内容绑定，不是对适配器的安全沙箱。
     if (source !== preflight.checkedBatch) throw new Error('Adapter changed after preflight');
     // Only load the declared, user-authorized local module at execution time.
     // Factories must be side-effect free until their inspect/write methods run.
@@ -71,6 +74,7 @@ async function probeAdapter({runDirectory, host, operationIds, now = Date.now}) 
   const ids=operationIds||plan.execution.dispatchIds||operations.filter(o=>['fill','add-record'].includes(o.action)).map(o=>o.id);
   const chosen=ids.map(id=>operations.find(o=>o.id===id));
   if(chosen.some(o=>!o)||new Set(ids).size!==ids.length) throw new Error('Invalid probe targets');
+  // 整组探测共享单次上限和本轮剩余预算，不能每读一个字段就重新计时。
   const deadline=Math.min(now()+(plan.execution.operationTimeoutMs??120000),
     plan.execution.roundStartedAt+(plan.execution.budgetMs??1800000));
   const timeout=()=>{const remaining=deadline-now();if(remaining<=0)throw new Error('Probe budget exhausted');return remaining;};
