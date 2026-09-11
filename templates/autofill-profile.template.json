@@ -1,0 +1,179 @@
+{
+  "example_only": true,
+  "notice": "空白模板：null 表示未知。填写真实资料、删除不用的占位记录并核对后，将 example_only 改为 false。",
+  "updated_at": null,
+  "basic": {
+    "name": null,
+    "email": null,
+    "phone": null,
+    "current_city": null
+  },
+  "education": [
+    {
+      "record_id": "education-001",
+      "school": null,
+      "major": null,
+      "degree": null,
+      "education_level": null,
+      "start_date": null,
+      "end_date": null,
+      "is_current": null,
+      "gpa": null,
+      "gpa_scale": null,
+      "rank": null,
+      "description": null,
+      "source": null
+    }
+  ],
+  "internships": [
+    {
+      "record_id": "internship-001",
+      "company": null,
+      "department": null,
+      "role": null,
+      "location": null,
+      "start_date": null,
+      "end_date": null,
+      "is_current": null,
+      "responsibilities": null,
+      "achievements": null,
+      "source": null
+    }
+  ],
+  "projects": [
+    {
+      "record_id": "project-001",
+      "name": null,
+      "role": null,
+      "start_date": null,
+      "end_date": null,
+      "is_current": null,
+      "description": null,
+      "responsibilities": null,
+      "achievements": null,
+      "source": null
+    }
+  ],
+  "research": [
+    {
+      "record_id": "research-001",
+      "type": null,
+      "title": null,
+      "publication_status": null,
+      "status_as_of": null,
+      "author_role": null,
+      "author_order": null,
+      "venue": null,
+      "url": null,
+      "contribution": null,
+      "source": null
+    }
+  ],
+  "competitions": [
+    {
+      "record_id": "competition-001",
+      "name": null,
+      "organizer": null,
+      "date": null,
+      "level": null,
+      "role": null,
+      "result": null,
+      "description": null,
+      "source": null
+    }
+  ],
+  "awards": [
+    {
+      "record_id": "award-001",
+      "name": null,
+      "organization": null,
+      "award_date": null,
+      "level": null,
+      "rank": null,
+      "related_competition_id": null,
+      "description": null,
+      "source": null
+    }
+  ],
+  "campus": [
+    {
+      "record_id": "campus-001",
+      "organization": null,
+      "role": null,
+      "start_date": null,
+      "end_date": null,
+      "responsibilities": null,
+      "achievements": null,
+      "source": null
+    }
+  ],
+  "skills": [
+    {
+      "record_id": "skill-001",
+      "name": null,
+      "proficiency": null,
+      "description": null,
+      "source": null
+    }
+  ],
+  "languages": [
+    {
+      "record_id": "language-001",
+      "language": null,
+      "exam_name": null,
+      "score": null,
+      "exam_date": null,
+      "source": null
+    }
+  ],
+  "field_metadata": {
+    "basic": {
+      "status": "unknown",
+      "note": "尚未填写或确认"
+    },
+    "education": {
+      "status": "unknown",
+      "note": "尚未填写或确认"
+    },
+    "internships": {
+      "status": "unknown",
+      "note": "尚未填写或确认"
+    },
+    "projects": {
+      "status": "unknown",
+      "note": "尚未填写或确认"
+    },
+    "research": {
+      "status": "unknown",
+      "note": "尚未填写或确认"
+    },
+    "competitions": {
+      "status": "unknown",
+      "note": "尚未填写或确认"
+    },
+    "awards": {
+      "status": "unknown",
+      "note": "尚未填写或确认"
+    },
+    "campus": {
+      "status": "unknown",
+      "note": "尚未填写或确认"
+    },
+    "skills": {
+      "status": "unknown",
+      "note": "尚未填写或确认"
+    },
+    "languages": {
+      "status": "unknown",
+      "note": "尚未填写或确认"
+    }
+  },
+  "autofill_policy": {
+    "identity_numbers": "user_enters_manually",
+    "missing_facts": "ask_user"
+  },
+  "presentation_policy": {
+    "preserve_publication_status": true,
+    "preserve_date_precision": true
+  }
+}
