@@ -2,6 +2,7 @@
  * Direct browser-tool mode must not pretend to use this entry. */
 const fs = require('node:fs');
 const path = require('node:path');
+const {checkBrowserPolicy} = require('./browser_policy.js');
 const {runBoundedBatch} = require('./bounded_batch.js');
 
 // 先写同目录临时文件，再替换状态文件；避免写到一半中断破坏原有进度。
@@ -20,6 +21,15 @@ function atomicJson(filename, value) {
   }
 }
 
+// A new probe must not race a remote call whose completion is still unknown.
+function checkPendingCall(root, driver, probing) {
+  const filename = path.join(root, 'execution-state.json');
+  if (!fs.existsSync(filename)) return;
+  const state = JSON.parse(fs.readFileSync(filename, 'utf8').replace(/^\uFEFF/, ''));
+  if (state.pendingCall && (probing || JSON.stringify(state.driver) !== JSON.stringify(driver)))
+    throw new Error('Resolve the pending call with its original driver before probing or switching');
+}
+
 async function executeAdapter({runDirectory, host, now = Date.now, options = {}}) {
   const root = path.resolve(runDirectory);
   const lockPath = path.join(root, 'execution-state.lock');
@@ -29,9 +39,11 @@ async function executeAdapter({runDirectory, host, now = Date.now, options = {}}
     const read = name => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8').replace(/^\uFEFF/, ''));
     const plan = read('alignment-plan.json');
     const preflight = read('preflight.json');
-    if (preflight.schemaVersion !== 2 || !preflight.ready ||
+    if (preflight.schemaVersion !== 3 || !preflight.ready ||
         JSON.stringify(plan) !== JSON.stringify(preflight.checkedPlan) ||
         plan.execution?.driver?.mode !== 'adapter') throw new Error('Current adapter-mode preflight required');
+    checkBrowserPolicy(plan, {now});
+    checkPendingCall(root, plan.execution.driver, false);
     const filename = path.join(root, 'batch.js');
     const source = fs.readFileSync(filename, 'utf8').replace(/^\uFEFF/, '');
     // 必须执行预检时的同一份代码；这只是内容绑定，不是对适配器的安全沙箱。
@@ -61,6 +73,8 @@ async function probeAdapter({runDirectory, host, operationIds, now = Date.now}) 
   const root=path.resolve(runDirectory);
   const plan=JSON.parse(fs.readFileSync(path.join(root,'alignment-plan.json'),'utf8').replace(/^\uFEFF/,''));
   if(plan.execution?.driver?.mode!=='adapter') throw new Error('Adapter mode required');
+  checkBrowserPolicy(plan, {probe:false});
+  checkPendingCall(root, plan.execution.driver, true);
   const filename=path.join(root,'batch.js');
   delete require.cache[require.resolve(filename)];
   const factory=require(filename)[plan.execution.driver.entryPoint];
@@ -87,7 +101,8 @@ async function probeAdapter({runDirectory, host, operationIds, now = Date.now}) 
   }
   timeout();
   // The outer real tool call id is added from its returned result, never invented here.
-  return {target:plan.execution.target,observedAt:now(),settled:true,
+  return {target:Object.fromEntries(Object.keys(plan.execution.target).map(k=>[k,target[k]])),
+    driver:plan.execution.driver,observedAt:now(),settled:true,
     entryPoint:plan.execution.driver.entryPoint,operations:rows};
 }
 

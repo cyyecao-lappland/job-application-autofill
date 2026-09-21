@@ -9,7 +9,13 @@ function fixture() {
     authorization: {fill:true,basis:'user requested fill'},
     driver:{mode:'direct-tool',name:'synthetic'}, target:{browser:'test',url:'https://example.test/form'},
     probe:{observedAt:Date.now()}}, operations};
-  const preflight = {schemaVersion:2, ready: true, runId: plan.runId, dispatchIds:operations.map(o=>o.id), checkedPlan: JSON.parse(JSON.stringify(plan))};
+  plan.execution.driver.channel = 'browser';
+  plan.execution.target.tabId = 'tab-1';
+  Object.assign(plan.execution.probe, {callId:'read-1',settled:true,target:structuredClone(plan.execution.target)});
+  plan.execution.probe.driver = structuredClone(plan.execution.driver);
+  plan.execution.discovery = {callId:'discovery-1',tool:'test.tabs',settled:true,existing:true,
+    target:structuredClone(plan.execution.target)};
+  const preflight = {schemaVersion:3, ready: true, runId: plan.runId, dispatchIds:operations.map(o=>o.id), checkedPlan: JSON.parse(JSON.stringify(plan))};
   const state = {runId: plan.runId, status: "prepared", results: {}};
   const values = {}, calls = [], checkpoints = [];
   const adapter = {
@@ -222,7 +228,7 @@ function fixture() {
     await assert.rejects(()=>runBoundedBatch(g.plan,g.preflight,g.adapter,g.state),/probe/);
   });
   await test('loaded adapter code must match checked code', async () => {
-    const f=fixture();f.plan.execution.driver.mode='adapter';f.preflight.checkedBatch='code-v1';f.adapter.source='code-v2';f.preflight.checkedPlan=structuredClone(f.plan);
+    const f=fixture();f.plan.execution.driver.mode='adapter';f.plan.execution.probe.driver=structuredClone(f.plan.execution.driver);f.preflight.checkedBatch='code-v1';f.adapter.source='code-v2';f.preflight.checkedPlan=structuredClone(f.plan);
     await assert.rejects(()=>runBoundedBatch(f.plan,f.preflight,f.adapter,f.state),/source/);
     assert.equal(f.calls.length,0);
   });
@@ -251,6 +257,42 @@ function fixture() {
     f.adapter.write=write;f.adapter.confirmSettled=async pending=>({settled:true,evidence:'host confirmed completed '+pending.id});
     s=await runBoundedBatch(f.plan,f.preflight,f.adapter,structuredClone(s));
     assert.equal(s.pendingWrite,null);assert.deepEqual(f.calls,['A','B','C','D']);
+  });
+  await test('CUA disabled or denied blocks all writes', async () => {
+    for (const policy of [undefined, {cua:'denied',basis:'user refused'}, {cua:'enabled'}]) {
+      const f=fixture();f.plan.execution.driver.channel='cua';
+      f.plan.execution.interactionPolicy=policy;
+      f.plan.execution.probe.driver=structuredClone(f.plan.execution.driver);
+      f.preflight.checkedPlan=structuredClone(f.plan);
+      await assert.rejects(()=>runBoundedBatch(f.plan,f.preflight,f.adapter,f.state),/CUA/);
+      assert.equal(f.calls.length,0);
+    }
+  });
+  await test('authorized driver switch preserves completed fields', async () => {
+    const f=fixture();
+    const s=await runBoundedBatch(f.plan,f.preflight,f.adapter,f.state,Date.now,{maxOperations:1});
+    f.plan.execution.driver.channel='cua';f.plan.execution.driver.name='cua-tool';
+    f.plan.execution.interactionPolicy={cua:'enabled',basis:'user explicitly enabled CUA'};
+    f.plan.execution.probe.driver=structuredClone(f.plan.execution.driver);
+    f.preflight.checkedPlan=structuredClone(f.plan);
+    const resumed=await runBoundedBatch(f.plan,f.preflight,f.adapter,s);
+    assert.equal(resumed.results.A.status,'written');
+    assert.deepEqual(f.calls,['A','B','C','D']);
+  });
+  await test('unsettled call cannot be cleared by switching drivers', async () => {
+    const f=fixture();f.adapter.write=async op=>{f.calls.push(op.id);throw new Error('pending');};
+    const s=await runBoundedBatch(f.plan,f.preflight,f.adapter,f.state);
+    f.plan.execution.driver.name='another tool';
+    f.plan.execution.probe.driver=structuredClone(f.plan.execution.driver);
+    f.preflight.checkedPlan=structuredClone(f.plan);
+    f.adapter.confirmSettled=async()=>({settled:true,evidence:'wrong driver claim'});
+    await assert.rejects(()=>runBoundedBatch(f.plan,f.preflight,f.adapter,s),/original driver/);
+    assert.equal(s.pendingWrite,'A');assert.deepEqual(f.calls,['A']);
+  });
+  await test('legacy preflight cannot enable execution', async () => {
+    const f=fixture();f.preflight.schemaVersion=2;
+    await assert.rejects(()=>runBoundedBatch(f.plan,f.preflight,f.adapter,f.state),/v3/);
+    assert.equal(f.calls.length,0);
   });
   process.stdout.write(`${tests} behavioral checks passed\n`);
 })().catch(error => { process.stderr.write(error.stack + "\n"); process.exitCode = 1; });

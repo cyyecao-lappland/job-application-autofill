@@ -1,5 +1,6 @@
 /* Host-neutral execution. Only use with a real, supported adapter and durable
  * checkpoint callback. Does not connect to a browser or grant authorization. */
+const {checkBrowserPolicy} = require('./browser_policy.js');
 const clone = value => JSON.parse(JSON.stringify(value));
 // 恢复时比对稳定的工作目标；探测、批次范围和定位修复可更新，事实与原预算不可偷换。
 function workflow(plan) {
@@ -8,9 +9,12 @@ function workflow(plan) {
   delete copy.execution.dispatchIds;
   // New user authorization can be recorded without forgetting completed work.
   delete copy.execution.authorization;
+  delete copy.execution.driver;
+  delete copy.execution.discovery;
+  delete copy.execution.interactionPolicy;
   // A repaired locator/method does not change the intended fact or record.
   for (const op of [...(copy.operations || []), ...(copy.records || []).flatMap(r=>r.operations)]) {
-    delete op.locator; delete op.methodEvidence; delete op.savedMethodEvidence;
+    delete op.channel; delete op.path; delete op.locator; delete op.methodEvidence; delete op.savedMethodEvidence;
   }
   return copy;
 }
@@ -24,10 +28,11 @@ function settledReadError(error) {
 }
 
 async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, options = {}) {
-  if (preflight?.schemaVersion !== 2 || !preflight.ready || preflight.runId !== plan.runId ||
+  if (preflight?.schemaVersion !== 3 || !preflight.ready || preflight.runId !== plan.runId ||
       JSON.stringify(preflight.checkedPlan) !== JSON.stringify(plan)) {
-    throw new Error('Current v2 plan and probe checks required');
+    throw new Error('Current v3 plan and probe checks required');
   }
+  checkBrowserPolicy(plan, {now});
   const config = plan.execution || {};
   if (config.authorization?.fill !== true || !config.authorization.basis) {
     throw new Error('Existing fill authorization must be recorded');
@@ -49,15 +54,19 @@ async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, 
       now() - config.probe.observedAt > 300000) throw new Error('Refresh the read-only probe');
   if (!state || state.runId !== plan.runId || !state.results) throw new Error('Missing state');
   const fresh = state.status === 'prepared' && !Object.keys(state.results).length && state.startedAt == null;
-  if (!fresh && (state.version !== 2 || JSON.stringify(state.workflow) !== JSON.stringify(workflow(plan)))) {
+  if (!fresh && (state.version !== 3 || JSON.stringify(state.workflow) !== JSON.stringify(workflow(plan)))) {
     throw new Error('Legacy or changed workflow: reconcile records; do not reset existing progress');
   }
   if (options.maxOperations != null && (!Number.isInteger(options.maxOperations) || options.maxOperations < 1)) {
     throw new Error('maxOperations must be a positive integer');
   }
-  if (fresh) Object.assign(state, {version: 2, workflow: workflow(plan), startedAt: config.roundStartedAt,
+  if (fresh) Object.assign(state, {version: 3, workflow: workflow(plan), startedAt: config.roundStartedAt,
     results: {}, modules: {}, familyFailures: {}, readAttempts: {}, writeAttempts: {},
     pendingWrite: null, pendingSave: null, pendingCall: null});
+  if (state.pendingCall && JSON.stringify(state.driver) !== JSON.stringify(config.driver)) {
+    throw new Error('Resolve the pending call with its original driver before switching');
+  }
+  state.driver = clone(config.driver);
   state.executionStartedAt = now();
   state.status = 'running';
   delete state.reason;

@@ -32,6 +32,14 @@ class PreflightTests(unittest.TestCase):
                    'target':{'browser':'test','url':'https://example.test/form'},
                    'operations':[{'id':'F1','count':1,'kind':'text','value':'','anchorMatched':True}]})
 
+        e = self.plan['execution']
+        e['driver']['channel'] = 'browser'
+        e['target']['tabId'] = 'tab-1'
+        e['probe']['target'] = dict(e['target'])
+        e['probe']['driver'] = dict(e['driver'])
+        e['discovery'] = dict(callId='discovery-1', tool='test.tabs', settled=True,
+                              existing=True, target=dict(e['target']))
+
     def result(self):
         return check(self.plan, self.snapshot, "local script", "manual list")
 
@@ -109,8 +117,9 @@ class PreflightTests(unittest.TestCase):
         self.assertTrue(result["ready"])
 
     def test_comment_only_adapter_rejected(self):
-        self.plan['execution']['driver'] = {'mode':'adapter','name':'test','entryPoint':'run'}
+        self.plan['execution']['driver'] = {'mode':'adapter','name':'test','entryPoint':'run','channel':'browser'}
         self.plan['execution']['probe']['entryPoint'] = 'run'
+        self.plan['execution']['probe']['driver'] = dict(self.plan['execution']['driver'])
         result = check(self.plan, self.snapshot, '/* run() would execute here */')
         self.assertTrue(result['planReady'])
         self.assertFalse(result['ready'])
@@ -138,6 +147,43 @@ class PreflightTests(unittest.TestCase):
     def test_real_probe_can_find_a_previously_completed_target(self):
         self.plan['execution']['probe']['operations'][0]['value'] = self.op['value']
         self.assertTrue(self.result()['ready'])
+
+    def test_cua_default_denied_and_explicit_enabled(self):
+        e = self.plan['execution']
+        e['driver']['channel'] = 'cua'
+        e['probe']['driver'] = dict(e['driver'])
+        self.assertFalse(self.result()['ready'])
+        e['interactionPolicy'] = {'cua': 'denied', 'basis': 'User says no CUA'}
+        self.assertFalse(self.result()['ready'])
+        e['interactionPolicy'] = {'cua': 'enabled'}
+        self.assertFalse(self.result()['ready'])
+        e['interactionPolicy']['basis'] = 'User explicitly enabled CUA'
+        self.assertTrue(self.result()['ready'], self.result())
+
+    def test_existing_page_identity_and_discovery_required(self):
+        e = self.plan['execution']
+        e['target'].pop('tabId')
+        self.assertFalse(self.result()['ready'])
+        e['target']['tabId'] = 'tab-1'
+        e['discovery']['existing'] = False
+        self.assertFalse(self.result()['ready'])
+        e['discovery']['existing'] = True
+        e['discovery']['target']['tabId'] = 'different-tab'
+        self.assertFalse(self.result()['ready'])
+
+    def test_driver_switch_invalidates_old_probe(self):
+        self.plan['execution']['driver']['name'] = 'other tool'
+        result = self.result()
+        self.assertTrue(result['planReady'])
+        self.assertFalse(result['ready'])
+
+    def test_visual_cannot_masquerade_as_browser_channel(self):
+        self.op['path'] = 'visual'
+        self.assertFalse(self.result()['ready'])
+
+    def test_operation_cannot_switch_to_cua_inside_browser_batch(self):
+        self.op['channel'] = 'cua'
+        self.assertFalse(self.result()['ready'])
 
     def test_cli_invalidates_stale_report_when_files_missing(self):
         with tempfile.TemporaryDirectory() as directory:

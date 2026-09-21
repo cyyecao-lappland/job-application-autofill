@@ -14,6 +14,41 @@ COMPLEX = {"date", "cascade", "search", "multi", "editor", "file", "captcha"}
 CATEGORIES = {"education", "internship", "project", "research", "award", "campus", "skill"}
 
 
+def check_browser_context(execution):
+    target = execution.get("target", {})
+    discovery = execution.get("discovery", {})
+    valid_id = lambda v: (isinstance(v, str) and bool(v.strip())) or (type(v) is int and v >= 0)
+    errors = []
+    if not target.get("browser") or not target.get("url") or not any(valid_id(target.get(k)) for k in ("tabId", "pageId")):
+        errors.append("Observed browser and tabId/pageId required")
+    if (not discovery.get("callId") or not discovery.get("tool") or
+            discovery.get("settled") is not True or discovery.get("existing") is not True or
+            discovery.get("target") != target):
+        errors.append("Discovery must identify the existing target page")
+    if execution.get("probe", {}).get("driver") != execution.get("driver"):
+        errors.append("Fresh probe from the current driver required")
+    return errors
+
+
+def check_interaction_policy(execution, operations):
+    policy = execution.get("interactionPolicy", {})
+    cua = policy.get("cua", "disabled")
+    driver = execution.get("driver", {})
+    channel = driver.get("channel")
+    errors = []
+    if cua not in {"disabled", "enabled", "denied"} or (cua != "disabled" and
+            not (isinstance(policy.get("basis"), str) and policy["basis"].strip())):
+        errors.append("Explicit CUA choice needs a user instruction basis")
+    if channel not in {"browser", "cua"}:
+        errors.append("Actual driver channel required")
+    if channel == "cua" and cua != "enabled":
+        errors.append("CUA is disabled")
+    for op in operations:
+        if (op.get("channel") and op["channel"] != channel) or (op.get("path") == "visual" and channel != "cua"):
+            errors.append(f"{op.get('id')}: operation channel differs from the current driver")
+    return errors
+
+
 def assess_readiness(plan, batch, now_ms):
     """Check recorded dispatch evidence, not the truth of a caller's tool result."""
     execution = plan.get("execution", {})
@@ -58,6 +93,8 @@ def assess_readiness(plan, batch, now_ms):
         if (not (already_matches or before_matches) or row.get("kind") != op.get("kind") or
                 (op.get("anchor") and row.get("anchorMatched") is not True)):
             errors.append(f"{key}: real current-value/control probe missing or mismatched")
+    errors.extend(check_browser_context(execution))
+    errors.extend(check_interaction_policy(execution, [automatic[i] for i in requested if i in automatic]))
     return errors, requested
 
 
@@ -167,7 +204,7 @@ def check(plan, snapshot, batch=None, handoff=None, now_ms=None):
     readiness, dispatch_ids = assess_readiness(plan, batch, now_ms if now_ms is not None else int(time.time() * 1000))
     # planReady 是计划结构通过；ready 还要求本批真实调用证据齐备。
     # checkedPlan/checkedBatch 供执行入口比对，不能证明证据真实或已完成独立核验。
-    return {"schemaVersion": 2, "planReady": not errors,
+    return {"schemaVersion": 3, "planReady": not errors,
             "ready": not errors and not readiness, "runId": plan.get("runId"), "errors": errors,
             "executionErrors": readiness, "dispatchIds": dispatch_ids,
             "checkedPlan": plan if not errors and not readiness else None,
@@ -189,7 +226,7 @@ def main():
         handoff = (root / "handoff.md").read_text(encoding="utf-8-sig") if (root / "handoff.md").exists() else None
         result = check(plan, snapshot, batch, handoff)
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
-        result = {"schemaVersion": 2, "planReady": False, "ready": False,
+        result = {"schemaVersion": 3, "planReady": False, "ready": False,
                   "errors": ["Missing, unreadable or malformed preparation files"]}
     # Invalidate a stale ready report even when this check fails.
     root.mkdir(parents=True, exist_ok=True)

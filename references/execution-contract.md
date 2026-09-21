@@ -13,11 +13,15 @@
   "roundStartedAt":1788840000000,
   "budgetMs":1800000,"operationTimeoutMs":120000,"saveTimeoutMs":180000,
   "connectionAttempts":2,"familyFailures":2,
-  "driver":{"mode":"direct-tool","name":"当前实际浏览器工具"},
-  "target":{"browser":"现场浏览器标识","url":"https://example.test/form"},
+  "driver":{"mode":"direct-tool","name":"当前实际浏览器工具","channel":"browser"},
+  "interactionPolicy":{"cua":"disabled"},
+  "discovery":{"callId":"真实发现调用编号","tool":"实际发现接口","settled":true,"existing":true,
+    "target":{"browser":"现场浏览器标识","tabId":"实际标签页标识","url":"https://example.test/form"}},
+  "target":{"browser":"现场浏览器标识","tabId":"实际标签页标识","url":"https://example.test/form"},
   "dispatchIds":["F1"],
   "probe":{
-    "target":{"browser":"现场浏览器标识","url":"https://example.test/form"},
+    "driver":{"mode":"direct-tool","name":"当前实际浏览器工具","channel":"browser"},
+    "target":{"browser":"现场浏览器标识","tabId":"实际标签页标识","url":"https://example.test/form"},
     "callId":"真实只读调用编号","settled":true,"observedAt":1788840000000,
     "operations":[{"id":"F1","count":1,"kind":"text","value":"","anchorMatched":true}]
   }
@@ -65,7 +69,7 @@ const result = await runBoundedBatch(plan, preflight, adapter, state, Date.now, 
   retryReadFailures: false
 });
 ```
-只在 host 支持这些加载与文件接口时使用；这段调用本身不创建浏览器。已用状态再次传入就是恢复，不需要创建空状态。v2 检查报告绑定当前计划；恢复可更新 probe、dispatchIds、已有授权，以及重新探测过的 locator/methodEvidence，但不能悄悄更改操作事实、记录、目标或原始预算。旧状态先人工/模型只读核对迁移，不能直接重放。
+只在 host 支持这些加载与文件接口时使用；这段调用本身不创建浏览器。已用状态再次传入就是恢复，不需要创建空状态。v3 检查报告绑定当前计划；恢复可更新 probe、dispatchIds、已有授权，以及重新探测过的 locator/methodEvidence，但不能悄悄更改操作事实、记录、目标或原始预算。旧状态先人工/模型只读核对迁移，不能直接重放。
 
 真实 adapter 必需：
 - `source`：实际加载的 batch.js 原文，与预检原文直接比较，不做哈希。加载方法和执行函数必须来自该代码，不能拿别的文件原文凑一致。
@@ -101,3 +105,15 @@ maxOperations 产生正常 paused 边界；下次带原状态继续。read-faile
 v1 状态、旧 preflight 和历史 batch 只作证据，不执行它们的未知动作。迁移时保留原始时间和未决状态，按当前网页匹配已完成记录；预算耗尽先交接，用户明确续作后再记录新的预算依据。
 
 执行循环约束通过它的调用，不会审计模型是否绕开工具，不会独立验证调用者填写的 probe/evidence，也不能使错误适配器自动正确。测试使用合成适配器；真实网站是否可用仍需要当前浏览器上的实际调用证据。
+
+## 浏览器策略与版本 3
+
+`driver.channel` 必填，取 browser 或 cua，表示实际工具通道，不由 locator 外观推断。每批操作继承这个通道；操作显式声明 channel 时必须一致，混合通道需分批重新探测。`path: visual` 只能在 cua 通道；浏览器工具原生键盘输入可为 native，但 CUA 的键盘/无障碍操作仍属于 cua。
+
+`interactionPolicy.cua` 缺省 disabled；enabled 或 denied 必须提供非空 basis，引用用户明确选择，不得引用泛化的“帮我填写”。程序检查声明，不能验证原始对话或工具行为。
+
+`discovery` 记录真实发现，`probe` 必须匹配完整 target 和 driver，并保留原来的调用结束、五分钟时效和字段检查。同一 URL 的另一个标签页不能冒充原页面。目标 ID 缺失则 ready=false；不能用自造 ID 填补。CUA 元素编号只在当前观察中有效，页面变更立即重新观察，五分钟是最长时效而非索引有效保证。
+
+预检报告 schemaVersion 和执行状态 version 升为 3；旧报告不得直接执行。旧状态保留供只读核对和明确迁移，不能修改版本号或重建 run 冒充新状态。恢复时允许更新工具、通道和用户策略，但事实、目标和原预算不变；pendingCall 未解决时禁止换驱动，probeAdapter 也不发起新的读取。已有 pendingWrite/pendingSave 继续按原逻辑只读核对。
+
+新增 `browser_policy.js` 在适配器加载前和批次执行前校验声明；direct-tool 不经过这个入口，仍需模型遵守先预检再执行。任意本地适配器代码不受沙箱隔离，不能宣称拦截了所有宿主工具调用。

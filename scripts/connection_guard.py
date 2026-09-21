@@ -6,9 +6,9 @@ import os
 from pathlib import Path
 import tempfile
 
-ROUTES = {"getTab", "tabs.get", "user.claimTab"}
+ACTIONS = {"attach-existing"}
 RETRYABLE = {"unsupported", "stale", "unattached"}
-OUTCOMES = RETRYABLE | {"verified", "occupied", "timeout", "unknown", "interrupted"}
+OUTCOMES = RETRYABLE | {"verified", "occupied", "timeout", "unknown", "interrupted", "dependency-missing", "discovery-unavailable"}
 
 
 class Rejected(ValueError):
@@ -27,8 +27,8 @@ def transition(state, action, data):
         for key in ("title", "providerTabId"):
             if data.get(key):
                 target[key] = data[key]
-        return {"version": 1, "target": target, "status": "prepared", "attempts": []}
-    if not isinstance(state, dict) or state.get("version") != 1:
+        return {"version": 2, "target": target, "status": "prepared", "attempts": []}
+    if not isinstance(state, dict) or state.get("version") != 2:
         raise Rejected("Missing or unsupported state")
     if action == "reserve":
         if state["status"] not in {"prepared", "retryable"}:
@@ -36,13 +36,16 @@ def transition(state, action, data):
         if len(state["attempts"]) >= 2:
             raise Rejected("Connection attempt limit reached")
         route = data["route"]
-        if route not in ROUTES or any(a["route"] == route for a in state["attempts"]):
+        if not route or any(a["route"] == route for a in state["attempts"]):
             raise Rejected("Unsupported or repeated route")
+        if data.get("actionKind") not in ACTIONS or not data.get("discoveryCallId") or not data.get("tool"):
+            raise Rejected("Existing-tab discovery evidence and actual tool required")
         if not data.get("tabId") or not target_matches(state["target"], data):
             raise Rejected("Candidate does not match the intended browser/page")
         # reserve 先记录 pending，update 落盘后才返回派发许可；中断不清零尝试次数。
         state["attempts"].append({"id": len(state["attempts"]) + 1,
                                   "route": route, "tabId": data["tabId"],
+                                  "tool": data["tool"], "discoveryCallId": data["discoveryCallId"],
                                   "status": "pending"})
         state["status"] = "pending"
         return state
@@ -55,7 +58,9 @@ def transition(state, action, data):
         # Host timeouts do not prove that remote work has ended.
         settled = data.get("settled") is True
         if outcome == "verified":
-            if not settled or data.get("probePassed") is not True or not target_matches(state["target"], data):
+            if (not settled or data.get("probePassed") is not True or
+                    data.get("tabId") != state["attempts"][-1]["tabId"] or
+                    not target_matches(state["target"], data)):
                 raise Rejected("Verification needs settled call and matching read-only probe")
         state["attempts"][-1].update(status=outcome, settled=settled)
         if outcome == "verified":
@@ -121,8 +126,12 @@ def main():
         command.add_argument("--url", required=command is not finish)
         command.add_argument("--title")
         command.add_argument("--provider-tab-id", dest="providerTabId")
-    reserve.add_argument("--route", choices=sorted(ROUTES), required=True)
+    reserve.add_argument("--route", required=True)
+    reserve.add_argument("--action-kind", dest="actionKind", choices=sorted(ACTIONS), required=True)
+    reserve.add_argument("--discovery-call-id", dest="discoveryCallId", required=True)
+    reserve.add_argument("--tool", required=True)
     reserve.add_argument("--tab-id", dest="tabId", required=True)
+    finish.add_argument("--tab-id", dest="tabId")
     finish.add_argument("--attempt", type=int, required=True)
     finish.add_argument("--outcome", choices=sorted(OUTCOMES), required=True)
     finish.add_argument("--settled", action="store_true")

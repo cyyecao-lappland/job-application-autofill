@@ -18,10 +18,11 @@ class ConnectionGuardTests(unittest.TestCase):
         update(self.root, "init", self.target)
 
     def reserve(self, route="getTab", **extra):
-        return update(self.root, "reserve", {**self.target, "tabId": "current-tab", "route": route, **extra})
+        return update(self.root, "reserve", {**self.target, "tabId": "current-tab", "route": route, "actionKind":"attach-existing",
+             "tool":"test.tabs", "discoveryCallId":"discovery-1", **extra})
 
     def finish(self, outcome, attempt=1, **extra):
-        return update(self.root, "finish", {"attempt": attempt, "outcome": outcome, "settled": True, **extra})
+        return update(self.root, "finish", {"attempt": attempt, "outcome": outcome, "settled": True, "tabId":"current-tab", **extra})
 
     def test_alternate_route_after_settled_failure(self):
         self.reserve()
@@ -77,6 +78,24 @@ class ConnectionGuardTests(unittest.TestCase):
             self.finish("verified", probePassed=True, **{**self.target, "url": "wrong"})
         self.assertEqual(update(self.root, "show", {})["status"], "pending")
 
+    def test_missing_dependency_stops_without_fallback(self):
+        self.reserve()
+        self.finish('dependency-missing')
+        with self.assertRaises(Rejected):
+            self.reserve('another-tool.attach')
+
+    def test_discovery_required_and_launch_not_allowed(self):
+        for extra in ({'discoveryCallId': ''}, {'actionKind': 'launch-new'}):
+            with self.assertRaises(Rejected):
+                self.reserve(**extra)
+        self.assertEqual(update(self.root, 'show', {})['attempts'], [])
+
+    def test_host_specific_route_with_evidence_is_supported(self):
+        self.reserve('host.browser_tabs.select')
+        with self.assertRaises(Rejected):
+            self.finish('verified', probePassed=True, **self.target, tabId='wrong-tab')
+        self.assertEqual(self.finish('verified', probePassed=True, **self.target)['status'], 'verified')
+
     def test_lock_blocks_state_change(self):
         (self.root / "connection-state.lock").write_text("", encoding="utf-8")
         with self.assertRaises(Rejected):
@@ -86,7 +105,8 @@ class ConnectionGuardTests(unittest.TestCase):
         command = [sys.executable, str(Path(__file__).with_name("connection_guard.py")),
                    "--run", str(self.root), "reserve", "--route", "getTab",
                    "--browser", self.target["browser"], "--url", self.target["url"],
-                   "--tab-id", "current-tab"]
+                   "--tab-id", "current-tab", "--action-kind", "attach-existing",
+                   "--tool", "test.tabs", "--discovery-call-id", "discovery-1"]
         first = subprocess.run(command, capture_output=True, text=True)
         self.assertEqual(first.returncode, 0, first.stderr)
         output = json.loads(first.stdout)

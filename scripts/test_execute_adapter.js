@@ -21,7 +21,13 @@ function fixture() {
     driver:{mode:'adapter',name:'test factory',entryPoint:'createAdapter'},
     probe:{observedAt:Date.now()}},
     operations:['A','B'].map(id=>({id,action:'fill',label:id,value:id,before:'',kind:'text',family:'plain'}))};
-  const preflight={schemaVersion:2,ready:true,planReady:true,runId:plan.runId,
+  plan.execution.driver.channel = 'browser';
+  plan.execution.target.tabId = 'tab-1';
+  Object.assign(plan.execution.probe, {callId:'read-1',settled:true,target:structuredClone(plan.execution.target)});
+  plan.execution.probe.driver = structuredClone(plan.execution.driver);
+  plan.execution.discovery = {callId:'discovery-1',tool:'test.tabs',settled:true,existing:true,
+    target:structuredClone(plan.execution.target)};
+  const preflight={schemaVersion:3,ready:true,planReady:true,runId:plan.runId,
     checkedPlan:plan,checkedBatch:source,dispatchIds:['A','B']};
   fs.writeFileSync(path.join(root,'batch.js'),source);
   fs.writeFileSync(path.join(root,'alignment-plan.json'),JSON.stringify(plan));
@@ -94,6 +100,24 @@ function fixture() {
   await test('run lock prevents concurrent dispatch',async f=>{
     fs.writeFileSync(path.join(f.root,'execution-state.lock'),'occupied');
     await assert.rejects(()=>executeAdapter({runDirectory:f.root,host:f.host}),{code:'EEXIST'});
+    assert.deepEqual(f.host.calls,[]);
+  });
+  await test('disabled CUA is rejected before module loading for execute and probe',async f=>{
+    f.plan.execution.driver.channel='cua';
+    f.plan.execution.probe.driver=structuredClone(f.plan.execution.driver);
+    const source="throw new Error('MODULE WAS LOADED');";
+    f.preflight.checkedBatch=source;
+    fs.writeFileSync(path.join(f.root,'batch.js'),source);
+    fs.writeFileSync(path.join(f.root,'alignment-plan.json'),JSON.stringify(f.plan));
+    fs.writeFileSync(path.join(f.root,'preflight.json'),JSON.stringify(f.preflight));
+    await assert.rejects(()=>executeAdapter({runDirectory:f.root,host:f.host}),/CUA is disabled/);
+    await assert.rejects(()=>probeAdapter({runDirectory:f.root,host:f.host}),/CUA is disabled/);
+    assert.deepEqual(f.host.calls,[]);
+  });
+  await test('pending remote call blocks probe before loading a module',async f=>{
+    fs.writeFileSync(path.join(f.root,'execution-state.json'),JSON.stringify({pendingCall:{kind:'write',id:'A'},driver:f.plan.execution.driver}));
+    fs.writeFileSync(path.join(f.root,'batch.js'),"throw new Error('MODULE WAS LOADED');");
+    await assert.rejects(()=>probeAdapter({runDirectory:f.root,host:f.host}),/pending call/);
     assert.deepEqual(f.host.calls,[]);
   });
   console.log(`${tests} disk/loader checks passed`);
