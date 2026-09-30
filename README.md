@@ -18,7 +18,7 @@
 - **填写前后分别核验**：先检查页面规则，再对照原始资料检查遗漏、重复和错误。
 - **分模块保存、支持续作**：保留已完成进度，交接缺失信息和难操作的字段。
 
-适用于支持本地文件、浏览器操作和独立子 agent 的 AI 助手。需要你提供个人资料并登录招聘网站；默认填写与暂存，最终提交另行授权。
+本版优先使用独立的 `job-application-langgraph` 执行程序，复用正式映射，集中处理陌生字段并按网站真实保存范围核验。仓库包含 skill 与辅助脚本，执行程序、个人资料和投递记录需单独迁移。填写、保存和正式提交沿用当前用户明确授权的范围；下载 skill 本身不代表授权。
 
 ## 怎么用
 
@@ -43,14 +43,35 @@ git clone https://github.com/cyyecao-lappland/job-application-autofill.git "$HOM
 
 已有同名 skill 时先确认版本，避免覆盖。安装后在对话中输入 `$job-application-autofill`；未识别时重启 Codex。浏览器工具和子 agent 能力由宿主提供，需确认可用。
 
-### 2. 准备个人资料
+### 2. 配置本机位置
+
+在克隆后的 skill 目录执行：
+
+```powershell
+Copy-Item .\config.example.json .\config.local.json
+```
+
+修改 `config.local.json` 中的 `workspace_root` 为网申目录；程序、资料路径相对根目录解析，Python 路径相对程序目录解析。保持目录结构时，迁移通常只需改根目录。配置示例针对 Windows；其他系统需设置实际 Python 可执行文件路径，例如 `.venv/bin/python`。
+
+```powershell
+python .\scripts\resolve_config.py
+```
+
+这条命令只检查路径，不读取资料正文或连接招聘网站。`ready` 仅表示必要文件存在；程序依赖、模型调用和 Edge 连接仍需按执行项目 README 检查。本机配置已加入 `.gitignore`，更新 skill 时保留；安装前核对旧版本，避免同时安装两个同名 skill。
+
+执行程序使用 `open-source/job-application-langgraph`，资料使用 `evidence-private/recruitment-autofill/autofill-profile.json`，均相对 `workspace_root`。正式映射和模型配置仍由程序自己的 `private/local-config.json` 管理。新电脑重建程序依赖并重新登录招聘网站，附件旧路径和原任务恢复状态另行核对。完整字段与迁移边界见 [本机配置与迁移](references/installation-config.md)。
+
+后续更新在 skill 仓库目录运行 `git pull`；执行程序与私人资料单独管理。
+
+### 3. 准备个人资料
 
 下载 [空白 JSON 模板](templates/autofill-profile.template.json)，另存为 `autofill-profile.json`，放到**仓库外**的私有工作目录：
 
 ```text
-job-applications/
-  private/autofill-profile.json   # 个人履历
-  runs/                          # 每次申请的计划、快照和进度
+job-application/                 # config.local.json 的 workspace_root
+  evidence-private/recruitment-autofill/autofill-profile.json
+  open-source/job-application-langgraph/
+    private/                    # 正式映射、任务记录与投递证据
 ```
 
 模板已列出基本信息、教育、实习、项目、论文、竞赛、奖项、校园经历、技能和语言字段。将 `null` 换成真实值；多段经历复制记录并使用不同 ID，不用的占位记录删除。填写后同步更新 `field_metadata`，核对后设置 `example_only: false`。写法参考 [虚构示例](examples/autofill-profile.example.json) 和 [JSON 资料教程](references/profile-format.md)。
@@ -59,9 +80,9 @@ job-applications/
 
 > 参考此 skill 的资料格式，把我指定的简历整理为 private/autofill-profile.json。保留事实来源，缺失值用 null，列出冲突供我确认。只整理资料，暂不操作招聘页面。
 
-个人 JSON 由你维护，不随仓库提供。证件号码、密码和登录凭据不放入文件；资料被助手读取后可能经宿主发送给模型服务，填写值会进入招聘网站。
+个人 JSON 由你维护，不随仓库提供；正式映射、投递台账和原 journal 也不上传。仅在用户当前授权的申请范围内使用资料，缺失事实不猜测。
 
-### 3. 打开申请页，开始填写
+### 4. 打开申请页，开始填写
 
 自行登录招聘网站，打开目标职位的申请表。在对话中明确选择浏览器标签页，并将下面的资料路径替换为你的绝对路径：
 
@@ -82,26 +103,28 @@ job-applications/
 ```text
 完整履历 + 职位要求
         ↓
-主 agent 勘察页面 → 独立 agent 核验规则
+读取页面与资料 → 程序复用已核验映射
         ↓
-生成字段计划 → 本地预检 → 批量填写
+集中处理陌生字段 → 同一执行器批量填写
         ↓
-另一独立 agent 核验内容 → 集中修正 → 分模块保存与回读
+按真实保存范围核验 → 保存确认与回读 → 激活已验证经验
 ```
 
-资料优先级为：本轮用户更正 → JSON 已确认字段 → 有来源的正文。路径按“用户明确指定 → JOB_APPLICATION_PROFILE 环境变量 → 当前目录 private/autofill-profile.json”查找。
+资料优先级为：本轮用户更正 → JSON 已确认字段 → 有来源的正文。安装位置由 `config.local.json` 统一解析；资料路径显式交给执行器。配置缺失或无效时报告，不回退旧电脑路径或示例资料。
 
 zero-shot 来自运行时的三步推断：从完整履历中选择有来源的事实，依据现场页面建立字段与记录映射，再由独立 agent 核验规则和内容。个人 JSON 是事实库，不是某个网站的字段模板；通用浏览器工具负责交互，站点经验只作为可选参考，不能替代现场验证。
 
-浏览器操作优先使用 DOM 和语义控件。默认 **direct-tool** 直接调用宿主工具；**adapter** 模式用于支持本地代码加载与状态落盘的宿主，需要真实适配器和 Node.js。共享浏览器由各 agent 串行操作。
+浏览器操作优先使用 DOM 和语义控件。正常入口是执行项目的 `scripts/run_edge_cdp_application.mjs`，显式接收配置解析的程序、资料、Python 与本机 Edge CDP 地址，复用同一已登录页面。旧 direct-tool 与 adapter 资料保留用于历史状态恢复。配置不会自动启动浏览器、复制登录态或批准网页写入。
 
-默认一轮预算 30 分钟。写入或保存结果未知时，保留未决状态并先只读核对；恢复时跳过已匹配项，保留用户修改，避免重复新增。规则核验和内容核验使用不同的独立上下文；没有子 agent 时不能声称完成默认核验流程。
+预算沿用原任务开始时间。写入或保存结果未知时，保留未决状态并先只读核对；恢复时跳过已匹配项，保留用户修改，避免重复新增。已由正式映射证明并执行回读一致的内容使用程序核验，陌生语义及需要独立内容审查的范围使用独立模型核验；两类证据分别报告。
 
 ### 代码导航
 
 | 文件 | 职责 |
 |---|---|
 | [SKILL.md](SKILL.md) | 授权、资料、填写、核验和交接规则 |
+| [config.example.json](config.example.json) | 可提交的安装配置示例 |
+| [resolve_config.py](scripts/resolve_config.py) | 只读解析安装路径并检查必要文件 |
 | [audit_coverage.py](scripts/audit_coverage.py) | 检查经历盘点、选择决策和字段去向 |
 | [preflight.py](scripts/preflight.py) | 检查计划、旧值和本批定位证据 |
 | [verify_form.py](scripts/verify_form.py) | 对照计划与页面快照，区分匹配和未验证 |
@@ -119,9 +142,11 @@ zero-shot 来自运行时的三步推断：从完整履历中选择有来源的�
 python -B -m unittest discover -s scripts -p "test_*.py"
 node scripts/test_bounded_batch.js
 node scripts/test_execute_adapter.js
+node scripts/test_direct_batch.js
+node scripts/test_direct_playwright.js
 ```
 
-发布时通过 48 项 Python 和 35 项 JavaScript 离线测试，使用虚构资料与合成适配器。脚本只用标准库；JavaScript 测试在 Node.js 24 验证，集成测试要求 `python` 命令可用。
+本次更新通过 71 项 Python 测试及 4 组 JavaScript 离线检查，使用虚构资料与合成浏览器／适配器，不连接真实招聘网站。脚本只用标准库；JavaScript 测试在 Node.js 24 验证，集成测试要求 `python` 命令可用。
 
 预检通过只说明提供的计划与证据满足检查条件，不证明事实真实、网页已保存或所有网站兼容；脚本也不能拦截绕过执行器的直接工具调用。提交前应核对实际申请内容。贡献代码或报告问题时仅附虚构资料，个人 JSON、截图和运行记录留在仓库外。
 

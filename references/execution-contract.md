@@ -31,13 +31,15 @@
 
 运行 `python scripts/preflight.py --run <run>`。输入必需文件为 `alignment-plan.json` 和 `before.json`；direct-tool 不要求 batch.js 或 handoff.md。adapter 模式另有真实 batch.js、`driver.entryPoint` 和 `probe.entryPoint`，探测必须实际经过该入口的读取方法。
 
-`planReady` 只表示本地结构检查通过；`ready` 还要求本批执行方式和定位证据齐备。备注会明确：这些是调用者提交的证据，检查器不访问浏览器、不授予权限、不证明事实来源内容，也不证明实际执行。全手动计划 planReady 可以为真，ready 必须为假；不是新的审批点。
+`planReady` 只表示本地结构检查通过；`batchReady`（兼容 `ready`）还要求本批执行方式、定位与已完成依赖证据齐备。未派发的自动目标返回 `deferredIds`，仍保留在整份计划中。字段 kind 合法性、来源、记录关系、ID 和依赖顺序全局检查；locator、methodEvidence、savedMethodEvidence、当前值及 driver/channel 只检查 dispatchIds。备注会明确：这些是调用者提交的证据，检查器不访问浏览器、不授予权限、不证明事实来源内容，也不证明实际执行。全手动计划 planReady 可以为真，ready 必须为假；不是新的审批点。
 
-每个自动目标包含 action、id、label、before、value、source、kind、family、path、locator、methodEvidence。kind 支持 text/radio/select/date/cascade/search/multi/editor/file/captcha/record；复杂控件需本站 savedMethodEvidence。无 JD 用 unavailable/reason、unranked 和已有 generalProfileBasis，不编造 JD，也不重复询问已明确的网申范围。
+每个自动目标包含 action、id、label、before、value、source、kind、family、path、locator、methodEvidence。kind 支持 text/radio/select/date/cascade/search/multi/editor/file/captcha/record；复杂控件进入自动派发时需本站 savedMethodEvidence；未验证时保留为 deferred，通过独立、有界的 slow 方法探索取得真实证据，不能伪造证据或永久降级手工。无 JD 用 unavailable/reason、unranked 和已有 generalProfileBasis，不编造 JD，也不重复询问已明确的网申范围。
 
 来源声明必须指向真实 JSON 记录和字段，预检尚不解析任意自然语言 source。不能把非空 source 当作事实核验。inventory 从完整 JSON 建立，不能只列模型选中的少量字段。
 
 ## direct-tool：实际调用优先
+
+可运行的默认执行器、实际 Playwright 连接层、调度与计时接口见 [direct-tool 批执行](direct-batch.md)。不要求安装新浏览器；宿主不支持相应接口时保留原 direct-tool slow path，不冒充批执行成功。
 
 1. 按真实接口观察当前批次并记录 probe；本地检查通过后，立即执行相同目标的短调用。
 2. 保存实际发给工具的代码/动作和工具返回编号、阶段、结果。不要另写一份没有被调用的 batch.js 来替代实际代码。工具日志已有原文时引用其真实编号，避免重复复制个人值。

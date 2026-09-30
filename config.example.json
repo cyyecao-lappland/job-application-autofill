@@ -1,0 +1,7 @@
+{
+  "workspace_root": "../job-application",
+  "project_directory": "open-source/job-application-langgraph",
+  "profile_file": "evidence-private/recruitment-autofill/autofill-profile.json",
+  "python_executable": ".venv/Scripts/python.exe",
+  "cdp_endpoint": "http://127.0.0.1:9333"
+}

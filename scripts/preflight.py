@@ -54,6 +54,8 @@ def assess_readiness(plan, batch, now_ms):
     execution = plan.get("execution", {})
     driver = execution.get("driver", {})
     errors = []
+    if execution.get("pendingCall") or execution.get("pendingWrite") or execution.get("pendingSave"):
+        errors.append("Unresolved prior operation; reconcile before dispatch")
     automatic = {o.get("id"): o for o in targets(plan)
                  if o.get("action") in {"fill", "add-record"}}
     # 全量计划可跨批次保留，但定位证据只需覆盖本次真正派发的目标。
@@ -86,6 +88,32 @@ def assess_readiness(plan, batch, now_ms):
         errors.append("Duplicate operation in probe")
     for key in requested:
         op, row = automatic.get(key, {}), indexed.get(key, {})
+        if not op.get("family") or not op.get("locator"):
+            errors.append(f"{key}: control family and observed locator required")
+        if op.get("path") not in {"dom", "native", "visual"}:
+            errors.append(f"{key}: choose one approved input path")
+        if not op.get("methodEvidence"):
+            errors.append(f"{key}: observed method evidence missing")
+        if op.get("kind") in COMPLEX and not op.get("savedMethodEvidence"):
+            errors.append(f"{key}: complex field lacks prior saved verification; defer or explore")
+        dependency = op.get("dependsOn")
+        if dependency:
+            parent = automatic.get(dependency, {})
+            completed = execution.get("results", {}).get(dependency, {})
+            if parent.get("action") == "add-record":
+                # Creating a record requires rediscovery before its children execute.
+                satisfied = (completed.get("status") in {"written", "alreadyMatched"} and completed.get("recordRef") and
+                             completed.get("evidence") and row.get("recordRef") == completed.get("recordRef") and
+                             row.get("anchorMatched") is True and row.get("count") == 1)
+            else:
+                parent_row = indexed.get(dependency, {})
+                in_batch = dependency in requested and requested.index(dependency) < requested.index(key)
+                satisfied = in_batch or (completed.get("status") in {"written", "alreadyMatched"} and completed.get("evidence") and
+                             parent_row.get("count") == 1 and parent_row.get("value") == parent.get("value") and
+                             parent_row.get("kind") == parent.get("kind") and
+                             (not parent.get("anchor") or parent_row.get("anchorMatched") is True))
+            if not satisfied:
+                errors.append(f"{key}: dependency lacks completed result and current unique identity")
         expected_count = 0 if op.get("action") == "add-record" else 1
         # 恢复时当前值可能已是目标值；允许这种探测结果，交执行器跳过已完成项。
         already_matches = row.get("count") == 1 and row.get("value") == op.get("value")
@@ -134,6 +162,8 @@ def check(plan, snapshot, batch=None, handoff=None, now_ms=None):
             errors.append("Snapshot contains an identity field beyond an excluded label")
     templates = {t.get("id"): t for t in snapshot.get("templates", [])}
     seen = set()
+    batch_errors = []
+    selected = set(execution.get("dispatchIds", [o.get("id") for o in ops if o.get("action") in {"fill", "add-record"}]))
     for op in ops:
         key = op.get("id", "(missing)")
         action = op.get("action")
@@ -146,15 +176,8 @@ def check(plan, snapshot, batch=None, handoff=None, now_ms=None):
             continue
         if not op.get("label") or "value" not in op or "before" not in op:
             errors.append(f"{key}: label, value and before required")
-        if op.get("kind") not in KINDS or not op.get("family") or not op.get("locator"):
-            errors.append(f"{key}: kind, control family and observed locator required")
-        if op.get("path") not in {"dom", "native", "visual"}:
-            errors.append(f"{key}: choose one approved input path")
-        if not op.get("methodEvidence"):
-            errors.append(f"{key}: observed method evidence missing")
-        # 复杂控件的显示值可能未进入站点表单状态，因此要求曾验证保存的方法。
-        if op.get("kind") in COMPLEX and not op.get("savedMethodEvidence"):
-            errors.append(f"{key}: complex field lacks prior saved verification; use manual")
+        if op.get("kind") not in KINDS:
+            errors.append(f"{key}: invalid control kind")
         if plan.get("jd", {}).get("status") == "unavailable" and op.get("scope") != "basic" and not execution.get("generalProfileBasis"):
             errors.append(f"{key}: no JD; non-basic content needs user general-profile scope")
         token = json.dumps([op.get("anchor"), op.get("label")], sort_keys=True, ensure_ascii=False)
@@ -164,9 +187,10 @@ def check(plan, snapshot, batch=None, handoff=None, now_ms=None):
         # 新记录必须先建立锚点，再填写其子字段，避免把值写进另一条同名记录。
         dependency = op.get("dependsOn")
         creation = by_id.get(dependency, {})
-        if dependency and (creation.get("action") != "add-record" or ops.index(creation) >= ops.index(op)):
-            errors.append(f"{key}: dependency must be an earlier add-record operation")
-        if action == "add-record" or dependency:
+        if dependency and (creation.get("action") not in {"fill", "add-record"} or ops.index(creation) >= ops.index(op)):
+            errors.append(f"{key}: dependency must be an earlier automatic operation")
+        record_dependency = dependency and creation.get("action") == "add-record"
+        if action == "add-record" or record_dependency:
             if action == "add-record" and op.get("kind") != "record":
                 errors.append(f"{key}: add-record requires kind record")
             template = templates.get(op.get("templateId"), {})
@@ -185,11 +209,11 @@ def check(plan, snapshot, batch=None, handoff=None, now_ms=None):
             elif not any(f.get("label") == op.get("label") and f.get("kind") == op.get("kind") for f in template.get("fields", [])):
                 errors.append(f"{key}: target not present in observed template")
             continue
-        if op.get("label") and "before" in op:
+        if key in selected and op.get("label") and "before" in op:
             probe = {"operations": [{**op, "action": "fill", "value": op["before"]}]}
             result = compare(probe, snapshot, "page")
             if result["matched"] != 1:
-                errors.append(f"{key}: old value or unique record mapping does not match snapshot")
+                batch_errors.append(f"{key}: old value or unique record mapping does not match snapshot")
     modules = plan.get("modules", [])
     module_ids, assigned = set(), set()
     for module in modules:
@@ -202,9 +226,13 @@ def check(plan, snapshot, batch=None, handoff=None, now_ms=None):
                 errors.append(f"{mid}: unknown or multiply assigned operation {key}")
             assigned.add(key)
     readiness, dispatch_ids = assess_readiness(plan, batch, now_ms if now_ms is not None else int(time.time() * 1000))
+    readiness.extend(batch_errors)
+    deferred = [o["id"] for o in ops if o.get("action") in {"fill", "add-record"} and o.get("id") not in dispatch_ids
+                and not (execution.get("results", {}).get(o["id"], {}).get("status") in {"written", "alreadyMatched"}
+                         and execution.get("results", {}).get(o["id"], {}).get("evidence"))]
     # planReady 是计划结构通过；ready 还要求本批真实调用证据齐备。
     # checkedPlan/checkedBatch 供执行入口比对，不能证明证据真实或已完成独立核验。
-    return {"schemaVersion": 3, "planReady": not errors,
+    return {"schemaVersion": 3, "planReady": not errors, "batchReady": not errors and not readiness, "deferredIds": deferred,
             "ready": not errors and not readiness, "runId": plan.get("runId"), "errors": errors,
             "executionErrors": readiness, "dispatchIds": dispatch_ids,
             "checkedPlan": plan if not errors and not readiness else None,

@@ -23,3 +23,6 @@ __pycache__/
 *.py[cod]
 node_modules/
 .DS_Store
+
+# Machine-local installation configuration
+config.local.json

@@ -1,6 +1,6 @@
 # 核验格式
 
-首次网页写入前使用 [execution-contract.md](execution-contract.md) 的 runId、执行方式、当前批次 probe、类别盘点、字段旧值及方法证据，并运行 `preflight.py`。planReady 是计划结构通过，ready 是本批记录的执行条件满足；两者都不表示执行已发生。direct-tool 无需本地 batch.js。本页示例只演示数据结构。
+首次网页写入前使用 [execution-contract.md](execution-contract.md) 的 runId、执行方式、当前批次 probe、类别盘点、字段旧值及方法证据，并运行 `preflight.py`。planReady 是计划结构通过，batchReady（兼容 ready）是本批记录的执行条件满足；deferredIds 保留未派发的自动目标；两者都不表示执行已发生。direct-tool 无需本地 batch.js。本页示例只演示数据结构。
 
 完整的新计划另有 `jd`、`inventory`、`coverage`。例如：
 
