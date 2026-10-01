@@ -20,6 +20,8 @@
 
 本仓库现已包含完整执行程序：edge_form_graph、browser、host、scripts、tests，以及 pyproject.toml、Node 依赖清单和启动入口。程序复用正式映射，集中处理陌生字段并按网站真实保存范围核验。个人资料、正式映射和投递记录仍通过私人渠道迁移。填写、保存和正式提交沿用当前用户明确授权的范围；下载 skill 本身不代表授权。
 
+仓库还包含独立的 [公司抽取与招聘筛选 skill](skills/recruitment-batch-screening/SKILL.md)：从已有候选 JSON 抽取公司／岗位、按真实台账去重，并编排 Luna 实时浏览官网审核。它与网申回填共用仓库，保留各自的入口和执行代码。
+
 ## 怎么用
 
 ### 新电脑缺少网申专用 Edge
@@ -48,6 +50,22 @@ git clone https://github.com/cyyecao-lappland/job-application-autofill.git "$HOM
 ```
 
 已有同名 skill 时先确认版本，避免覆盖。安装后在对话中输入 `$job-application-autofill`；未识别时重启 Codex。浏览器工具和子 agent 能力由宿主提供，需确认可用。
+
+### 同时安装公司抽取与招聘筛选 skill
+
+`skills/recruitment-batch-screening` 保留完整独立 skill。若要在任意工作区使用它，请将该目录安装到个人技能目录。在本仓库根目录执行以下 Windows PowerShell 命令：
+
+```powershell
+$skillsDir = Join-Path $env:USERPROFILE '.agents/skills'
+New-Item -ItemType Directory -Force $skillsDir | Out-Null
+Copy-Item -LiteralPath .\skills\recruitment-batch-screening -Destination $skillsDir -Recurse -Force
+```
+
+macOS/Linux 可复制同一目录至 `~/.agents/skills/recruitment-batch-screening`。安装后使用 `$recruitment-batch-screening`；避免同时保留多个同名安装。它的 Python 程序只用标准库，无需另外安装 Python 包；Luna 审核仍需要宿主提供实际子代理和浏览器工具。
+
+后续先在本仓库执行 `git pull`，再重复复制命令更新筛选 skill。个人运行配置保存为 `config.local.json`；可复用的个人台账绑定保存为 `references/local-sources.local.json`，这两个文件均不随 Git 提交，复制更新时也不会被公开模板覆盖。文件格式、运行命令与来源要求见 [筛选 skill](skills/recruitment-batch-screening/SKILL.md)。
+
+公开版本不附带公司台账、候选池、个人履历或审核记录。所有输入路径应改为新电脑的绝对路径，`confirmed_via` 必须写明实际核验来源；默认排除源为空，未配置真实来源会停止。只有部分恢复快照时，完整历史去重仍有缺口。该 skill 是当前保留的候选抽取与审核编排程序，旧 LangGraph 抽取器源码未包含在内。
 
 ### 2. 安装执行程序并配置本机位置
 
@@ -164,6 +182,7 @@ $env:JOB_APPLICATION_PYTHON = Join-Path (Get-Location).Path '.venv\Scripts\pytho
 $env:PATH = (Join-Path (Get-Location).Path '.venv\Scripts') + ';' + $env:PATH
 .\.venv\Scripts\python.exe -B -m unittest discover -s tests -p "test_*.py"
 .\.venv\Scripts\python.exe -B -m unittest discover -s scripts -p "test_*.py"
+.\.venv\Scripts\python.exe -B -m unittest discover -s skills/recruitment-batch-screening/scripts -p "test_*.py"
 node --test tests/test_*.mjs
 node scripts/test_bounded_batch.js
 node scripts/test_execute_adapter.js
@@ -172,6 +191,8 @@ node scripts/test_direct_playwright.js
 ```
 
 本次更新通过执行程序 466 项 Python 测试、skill 辅助脚本 71 项 Python 测试、执行程序 Node 测试及 4 组原有 JavaScript 检查。全新 Python 环境完成 `pip install -e .`，Node 依赖完成 `npm ci`。可选 E5 服务另通过 31 项测试、跳过 2 项依赖模型的测试；这不证明真实模型推理已验证。以上均为离线检查，使用虚构资料与合成浏览器／适配器，不连接真实招聘网站或提交申请。JavaScript 测试在 Node.js 24 验证，集成测试要求 `python` 命令可用；macOS/Linux 请改用 `.venv/bin/python` 与对应环境变量语法。
+
+公司抽取与筛选 skill 随仓库发布时另通过 19 项离线测试，包括未配置排除源时停止、本机绑定优先级及审核证据检查；这不代表已完成新的官网审核。
 
 预检通过只说明提供的计划与证据满足检查条件，不证明事实真实、网页已保存或所有网站兼容；脚本也不能拦截绕过执行器的直接工具调用。提交前应核对实际申请内容。贡献代码或报告问题时仅附虚构资料，个人 JSON、截图和运行记录留在仓库外。
 

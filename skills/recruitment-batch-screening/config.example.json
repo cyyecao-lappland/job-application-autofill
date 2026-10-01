@@ -1,0 +1,18 @@
+{
+  "schema": "recruitment-screening-config-v2",
+  "target": 30,
+  "target_unit": "companies",
+  "candidate_files": ["C:/path/to/private/candidates.json"],
+  "profile_path": "C:/path/to/private/profile.md",
+  "criteria_path": "C:/path/to/private/screening-preferences.md",
+  "denylist_sources": [
+    {
+      "role": "haitou_company_exclusion",
+      "confirmed_via": null,
+      "path": "C:/path/to/private/company-history.json",
+      "records_pointer": "/applications",
+      "company_name_pointer": "/company_name"
+    }
+  ],
+  "official_roots_path": "C:/path/to/private/verified-official-roots.json"
+}

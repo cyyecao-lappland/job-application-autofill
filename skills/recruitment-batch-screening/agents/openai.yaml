@@ -1,0 +1,6 @@
+interface:
+  display_name: "Recruitment Batch Screening"
+  short_description: "代码抽取排重并由Luna实时浏览官网核验岗位证据，不足补抽直至达标"
+  default_prompt: "Use $recruitment-batch-screening to exclude companies in the confirmed haitou JSON, then have Luna browse official JDs and refill candidates until the target is reached."
+policy:
+  allow_implicit_invocation: true
