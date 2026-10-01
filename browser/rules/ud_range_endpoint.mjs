@@ -1,0 +1,1 @@
+export const matches=field=>field.kind==='text'&&field.component==='ud-range-date'&&field.control_pattern==='ud_date_pair'&&['start','end'].includes(field.range_endpoint)&&!field.readonly&&!field.disabled;

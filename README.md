@@ -18,7 +18,7 @@
 - **填写前后分别核验**：先检查页面规则，再对照原始资料检查遗漏、重复和错误。
 - **分模块保存、支持续作**：保留已完成进度，交接缺失信息和难操作的字段。
 
-本版优先使用独立的 `job-application-langgraph` 执行程序，复用正式映射，集中处理陌生字段并按网站真实保存范围核验。仓库包含 skill 与辅助脚本，执行程序、个人资料和投递记录需单独迁移。填写、保存和正式提交沿用当前用户明确授权的范围；下载 skill 本身不代表授权。
+本仓库现已包含完整执行程序：edge_form_graph、browser、host、scripts、tests，以及 pyproject.toml、Node 依赖清单和启动入口。程序复用正式映射，集中处理陌生字段并按网站真实保存范围核验。个人资料、正式映射和投递记录仍通过私人渠道迁移。填写、保存和正式提交沿用当前用户明确授权的范围；下载 skill 本身不代表授权。
 
 ## 怎么用
 
@@ -43,25 +43,37 @@ git clone https://github.com/cyyecao-lappland/job-application-autofill.git "$HOM
 
 已有同名 skill 时先确认版本，避免覆盖。安装后在对话中输入 `$job-application-autofill`；未识别时重启 Codex。浏览器工具和子 agent 能力由宿主提供，需确认可用。
 
-### 2. 配置本机位置
+### 2. 安装执行程序并配置本机位置
 
-在克隆后的 skill 目录执行：
+仓库根目录就是执行项目，不需要另找 job-application-langgraph 源码。Windows 使用 Python 3.11 或以上及 Node.js，从克隆后的目录执行：
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+npm ci
+```
+
+macOS/Linux 使用 `.venv/bin/python` 安装 Python 项目，并运行 `npm ci`。模型调用还需要本机可用且已登录的 Codex CLI；环境安装检查不调用真实模型或招聘网站。
+
+若尚无本机配置，复制 `config.example.json` 为 `config.local.json`。新示例中的 `workspace_root` 和 `project_directory` 都是 `.`，指向当前仓库；`profile_file` 改为你真实个人资料的路径，也支持绝对路径。其他系统还需设置实际 Python 路径，如 `.venv/bin/python`。
 
 ```powershell
 Copy-Item .\config.example.json .\config.local.json
+.\.venv\Scripts\python.exe .\scripts\resolve_config.py
 ```
 
-修改 `config.local.json` 中的 `workspace_root` 为网申目录；程序、资料路径相对根目录解析，Python 路径相对程序目录解析。保持目录结构时，迁移通常只需改根目录。配置示例针对 Windows；其他系统需设置实际 Python 可执行文件路径，例如 `.venv/bin/python`。
+已有 `config.local.json` 时保留，不用示例覆盖。旧配置仍可指向 scp 迁移的完整执行项目；若改用此仓库的执行代码，将 `project_directory` 改为仓库绝对路径，核对 `python_executable`，并保留原资料与任务根目录。
+
+正式映射、控件方法和程序私有配置属于个人运行数据。已有迁移资料时，从原执行项目的 `private` 中保留这些文件及原申请记录，或配置正确的绝对资料/映射路径；勿用空模板覆盖原映射。程序的 `private/local-config.json` 示例在 `templates/local-config.example.json`。仅全新资料、没有历史映射时，可用 `templates/form-knowledge.empty.json` 初始化 `private/form-knowledge.json`。
+
+路径检查只验证必要文件存在，不证明依赖、模型、浏览器或网站保存已经可用。程序依赖安装可通过下面的离线命令检查：
 
 ```powershell
-python .\scripts\resolve_config.py
+.\.venv\Scripts\python.exe -m edge_form_graph.application_cli --help
+node scripts/build_control_registry.mjs --check
 ```
 
-这条命令只检查路径，不读取资料正文或连接招聘网站。`ready` 仅表示必要文件存在；程序依赖、模型调用和 Edge 连接仍需按执行项目 README 检查。本机配置已加入 `.gitignore`，更新 skill 时保留；安装前核对旧版本，避免同时安装两个同名 skill。
-
-执行程序使用 `open-source/job-application-langgraph`，资料使用 `evidence-private/recruitment-autofill/autofill-profile.json`，均相对 `workspace_root`。正式映射和模型配置仍由程序自己的 `private/local-config.json` 管理。新电脑重建程序依赖并重新登录招聘网站，附件旧路径和原任务恢复状态另行核对。完整字段与迁移边界见 [本机配置与迁移](references/installation-config.md)。
-
-后续更新在 skill 仓库目录运行 `git pull`；执行程序与私人资料单独管理。
+后续在仓库运行 `git pull` 即可同时更新 skill 和执行代码，个人配置与记录保持独立。完整执行接口见 [执行程序说明](docs/executor-guide.md)，配置与迁移边界见 [本机配置与迁移](references/installation-config.md)。
 
 ### 3. 准备个人资料
 
@@ -124,6 +136,9 @@ zero-shot 来自运行时的三步推断：从完整履历中选择有来源的�
 |---|---|
 | [SKILL.md](SKILL.md) | 授权、资料、填写、核验和交接规则 |
 | [config.example.json](config.example.json) | 可提交的安装配置示例 |
+| [pyproject.toml](pyproject.toml) | Python 执行程序及依赖 |
+| [tests/](tests/) | 执行程序的离线回归测试 |
+| [run_edge_cdp_application.mjs](scripts/run_edge_cdp_application.mjs) | 已登录 Edge 页面上的原生执行入口 |
 | [resolve_config.py](scripts/resolve_config.py) | 只读解析安装路径并检查必要文件 |
 | [audit_coverage.py](scripts/audit_coverage.py) | 检查经历盘点、选择决策和字段去向 |
 | [preflight.py](scripts/preflight.py) | 检查计划、旧值和本批定位证据 |
@@ -138,15 +153,19 @@ zero-shot 来自运行时的三步推断：从完整履历中选择有来源的�
 
 在仓库根目录运行：
 
-```sh
-python -B -m unittest discover -s scripts -p "test_*.py"
+```powershell
+$env:JOB_APPLICATION_PYTHON = Join-Path (Get-Location).Path '.venv\Scripts\python.exe'
+$env:PATH = (Join-Path (Get-Location).Path '.venv\Scripts') + ';' + $env:PATH
+.\.venv\Scripts\python.exe -B -m unittest discover -s tests -p "test_*.py"
+.\.venv\Scripts\python.exe -B -m unittest discover -s scripts -p "test_*.py"
+node --test tests/test_*.mjs
 node scripts/test_bounded_batch.js
 node scripts/test_execute_adapter.js
 node scripts/test_direct_batch.js
 node scripts/test_direct_playwright.js
 ```
 
-本次更新通过 71 项 Python 测试及 4 组 JavaScript 离线检查，使用虚构资料与合成浏览器／适配器，不连接真实招聘网站。脚本只用标准库；JavaScript 测试在 Node.js 24 验证，集成测试要求 `python` 命令可用。
+本次更新通过执行程序 466 项 Python 测试、skill 辅助脚本 71 项 Python 测试、执行程序 Node 测试及 4 组原有 JavaScript 检查。全新 Python 环境完成 `pip install -e .`，Node 依赖完成 `npm ci`。可选 E5 服务另通过 31 项测试、跳过 2 项依赖模型的测试；这不证明真实模型推理已验证。以上均为离线检查，使用虚构资料与合成浏览器／适配器，不连接真实招聘网站或提交申请。JavaScript 测试在 Node.js 24 验证，集成测试要求 `python` 命令可用；macOS/Linux 请改用 `.venv/bin/python` 与对应环境变量语法。
 
 预检通过只说明提供的计划与证据满足检查条件，不证明事实真实、网页已保存或所有网站兼容；脚本也不能拦截绕过执行器的直接工具调用。提交前应核对实际申请内容。贡献代码或报告问题时仅附虚构资料，个人 JSON、截图和运行记录留在仓库外。
 

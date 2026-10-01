@@ -26,3 +26,18 @@ node_modules/
 
 # Machine-local installation configuration
 config.local.json
+
+# Local executor environments and state
+.venv/
+.venv-embedding/
+*.egg-info/
+.pytest_cache/
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.db
+inference-service/models/
+inference-service/data/
+inference-service/library/
+inference-service/benchmark-results/

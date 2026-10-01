@@ -1,0 +1,398 @@
+{
+  "environment": "local headless Edge; synthetic HTML, no production site",
+  "textRegionScenarios": 48,
+  "searchScenarios": 6,
+  "additionalScenarios": 4,
+  "total": 58,
+  "match": 52,
+  "skipped": 2,
+  "correctRejection": 4,
+  "rows": [
+    {
+      "kind": "text",
+      "layout": "div",
+      "state": "empty",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "div",
+      "state": "existing",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "div",
+      "state": "already_correct",
+      "verification": "match",
+      "actions": 0
+    },
+    {
+      "kind": "text",
+      "layout": "div",
+      "state": "enabled",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "div",
+      "state": "rerender",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "div",
+      "state": "duplicate_label",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "section",
+      "state": "empty",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "section",
+      "state": "existing",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "section",
+      "state": "already_correct",
+      "verification": "match",
+      "actions": 0
+    },
+    {
+      "kind": "text",
+      "layout": "section",
+      "state": "enabled",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "section",
+      "state": "rerender",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "section",
+      "state": "duplicate_label",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "article",
+      "state": "empty",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "article",
+      "state": "existing",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "article",
+      "state": "already_correct",
+      "verification": "match",
+      "actions": 0
+    },
+    {
+      "kind": "text",
+      "layout": "article",
+      "state": "enabled",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "article",
+      "state": "rerender",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "article",
+      "state": "duplicate_label",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "fieldset",
+      "state": "empty",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "fieldset",
+      "state": "existing",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "fieldset",
+      "state": "already_correct",
+      "verification": "match",
+      "actions": 0
+    },
+    {
+      "kind": "text",
+      "layout": "fieldset",
+      "state": "enabled",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "fieldset",
+      "state": "rerender",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "text",
+      "layout": "fieldset",
+      "state": "duplicate_label",
+      "verification": "match",
+      "actions": 3
+    },
+    {
+      "kind": "region",
+      "layout": "div",
+      "state": "empty",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "div",
+      "state": "existing",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "div",
+      "state": "already_correct",
+      "verification": "match",
+      "actions": 0
+    },
+    {
+      "kind": "region",
+      "layout": "div",
+      "state": "enabled",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "div",
+      "state": "rerender",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "div",
+      "state": "duplicate_label",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "section",
+      "state": "empty",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "section",
+      "state": "existing",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "section",
+      "state": "already_correct",
+      "verification": "match",
+      "actions": 0
+    },
+    {
+      "kind": "region",
+      "layout": "section",
+      "state": "enabled",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "section",
+      "state": "rerender",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "section",
+      "state": "duplicate_label",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "article",
+      "state": "empty",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "article",
+      "state": "existing",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "article",
+      "state": "already_correct",
+      "verification": "match",
+      "actions": 0
+    },
+    {
+      "kind": "region",
+      "layout": "article",
+      "state": "enabled",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "article",
+      "state": "rerender",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "article",
+      "state": "duplicate_label",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "fieldset",
+      "state": "empty",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "fieldset",
+      "state": "existing",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "fieldset",
+      "state": "already_correct",
+      "verification": "match",
+      "actions": 0
+    },
+    {
+      "kind": "region",
+      "layout": "fieldset",
+      "state": "enabled",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "fieldset",
+      "state": "rerender",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "region",
+      "layout": "fieldset",
+      "state": "duplicate_label",
+      "verification": "match",
+      "actions": 5
+    },
+    {
+      "kind": "search",
+      "state": "async",
+      "verification": "match"
+    },
+    {
+      "kind": "search",
+      "state": "rerender",
+      "verification": "match"
+    },
+    {
+      "kind": "search",
+      "state": "duplicate_options",
+      "result": "correct_rejection"
+    },
+    {
+      "kind": "search",
+      "state": "unreadable",
+      "verification": "skipped"
+    },
+    {
+      "kind": "search",
+      "state": "already_correct",
+      "verification": "match"
+    },
+    {
+      "kind": "search",
+      "state": "two_records",
+      "verification": "match"
+    },
+    {
+      "kind": "text",
+      "state": "user_modified",
+      "result": "correct_rejection"
+    },
+    {
+      "kind": "text",
+      "state": "ambiguous_record",
+      "result": "correct_rejection"
+    },
+    {
+      "kind": "text",
+      "state": "composite",
+      "result": "correct_rejection"
+    },
+    {
+      "kind": "text",
+      "state": "masked",
+      "verification": "skipped"
+    }
+  ]
+}

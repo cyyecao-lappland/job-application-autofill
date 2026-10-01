@@ -1,0 +1,17 @@
+{
+  "name": "job-application-langgraph-browser",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:node": "node --test tests/test_*.mjs",
+    "inspect:edge": "node scripts/inspect_edge_cdp.mjs",
+    "run:edge": "node scripts/run_edge_cdp_application.mjs",
+    "build:controls": "node scripts/build_control_registry.mjs",
+    "check:controls": "node scripts/build_control_registry.mjs --check",
+    "test:controls:browser": "node scripts/test_control_browser.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "1.63.0"
+  }
+}

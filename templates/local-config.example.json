@@ -1,0 +1,6 @@
+{
+  "profile": "private/autofill-profile.json",
+  "semantic_model": "gpt-6-luna",
+  "review_model": "gpt-6-luna",
+  "knowledge_file": "private/form-knowledge.json"
+}

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edge-form-graph"
+version = "0.1.0"
+description = "JSON-grounded LangGraph form workflow with a controlled Codex Edge executor"
+requires-python = ">=3.11"
+dependencies = ["langgraph==1.2.11", "langgraph-checkpoint-sqlite==3.1.1"]
+
+[project.scripts]
+edge-form-graph = "edge_form_graph.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["edge_form_graph*"]
+
+[tool.setuptools.package-data]
+edge_form_graph = ["control_catalog.json"]

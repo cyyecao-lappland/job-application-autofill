@@ -1,0 +1,81 @@
+key	zh	en
+identity/name	您的姓名	Full legal name
+identity/family_name	姓氏	Surname
+identity/given_name	名字（不含姓）	First name
+identity/gender	性别	Sex
+identity/birth_date	出生年月日	Date of birth
+identity/nationality	国籍	Country of citizenship
+identity/ethnicity	民族	Ethnic group
+identity/political_status	政治面貌	Political affiliation
+identity/marital_status	婚姻状况	Marital status
+identity/identity_document_number	证件号码	Identification document number
+identity/identity_document_type	证件类别	Type of identification document
+identity/height_cm	身高（厘米）	Height in centimetres
+identity/weight_kg	体重（公斤）	Weight in kilograms
+contact/mobile	联系电话	Cell phone number
+contact/email	电子邮箱地址	Email address
+contact/emergency_contact_name	紧急联系人姓名	Emergency contact full name
+contact/emergency_contact_phone	紧急联系电话	Emergency contact telephone
+contact/emergency_contact_relationship	与紧急联系人的关系	Relationship to emergency contact
+contact/current_residence/city	现居住城市	City of current residence
+contact/current_hukou/city	户籍所在城市	City of household registration
+contact/hometown/province	籍贯所在省份	Province of ancestral origin
+contact/mailing_address	通讯地址	Correspondence address
+contact/postal_code	邮政编码	ZIP code
+education/*/school_name	毕业院校	University attended
+education/*/college	院系名称	School or faculty within university
+education/*/major	所学专业	Field of study
+education/*/degree	所获学位	Academic degree
+education/*/education_level	学历层次	Level of education
+education/*/start_date	入学时间	Date studies began
+education/*/end_date	学习结束时间	Study end date
+education/*/expected_graduation_date	预计毕业时间	Anticipated graduation date
+education/*/study_mode	学习形式	Mode of study
+education/*/gpa	平均学分绩点	Grade point average
+education/*/rank_position	专业排名名次	Academic rank position
+education/*/rank_total	排名总人数	Number of students ranked
+education/*/research_direction	研究方向	Research specialization
+education/*/advisor	导师姓名	Academic supervisor
+employment/*/company	任职单位	Employer name
+employment/*/department	所在部门	Department
+employment/*/position	担任职位	Job title
+employment/*/start_date	入职日期	Employment start date
+employment/*/end_date	离职日期	Employment end date
+employment/*/responsibilities	岗位职责	Main duties
+employment/*/achievements	工作业绩	Key accomplishments
+employment/*/leaving_reason	离职原因	Reason for leaving
+employment/*/employment_type	用工形式	Employment category
+employment/*/monthly_salary	月薪	Monthly compensation
+employment/*/referee_name	证明人姓名	Reference contact name
+employment/*/referee_contact	证明人联系方式	Reference contact details
+projects/*/name	项目名称	Project title
+projects/*/role	担任角色	Role in the project
+projects/*/start_date	开始时间	Start date
+projects/*/end_date	结束时间	End date
+projects/*/description	项目简介	Project overview
+projects/*/responsibilities	本人负责的工作	Your responsibilities
+projects/*/team_size	团队人数	Team headcount
+campus/*/organization	社团或组织名称	Student organization name
+campus/*/role	所任职务	Position held
+awards/*/name	奖项名称	Name of award
+awards/*/award_date	获奖时间	Date received
+awards/*/issuer	颁奖单位	Awarding organization
+languages/*/language	外语语种	Foreign language
+languages/*/exam_type	语言考试名称	Language proficiency test
+languages/*/score	考试成绩	Test score
+family/*/name	家庭成员姓名	Family member full name
+family/*/relationship	与本人关系	Relationship to applicant
+family/*/employer	工作单位	Employer
+family/*/phone	联系电话	Phone number
+preferences/salary_expectation_monthly	期望月薪	Expected monthly pay
+preferences/preferred_cities	意向工作城市	Preferred work locations
+preferences/target_positions	求职意向岗位	Desired job roles
+preferences/employment_available_date	最早到岗日期	Earliest employment start date
+preferences/internship_available_date	实习到岗时间	Internship availability date
+preferences/internship_weekly_days	每周可实习天数	Days available per week for internship
+preferences/accept_business_travel	是否接受出差	Willing to travel for business
+preferences/accept_relocation	是否接受搬迁	Willing to relocate
+preferences/accept_shift_work	是否接受轮班	Willing to work shifts
+personal_answers/hobbies	兴趣爱好	Interests and hobbies
+personal_answers/self_assessment	自我评价	Personal assessment
+personal_answers/strengths	个人优势	Personal strengths
