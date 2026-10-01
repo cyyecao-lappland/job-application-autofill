@@ -26,6 +26,10 @@ node_modules/
 
 # Machine-local installation configuration
 config.local.json
+edge-config.json
+Edge-Automation-CDP/
+JobApplicationEdge/
+edge-profile/
 
 # Local executor environments and state
 .venv/

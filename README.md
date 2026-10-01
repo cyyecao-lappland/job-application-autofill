@@ -22,6 +22,12 @@
 
 ## 怎么用
 
+### 新电脑缺少网申专用 Edge
+
+点击本仓库 **Code → Download ZIP**，解压后双击根目录 **install-edge.cmd**。脚本自动检测 Edge（缺少时通过 winget 安装）、创建独立浏览器用户目录和桌面的 **网申专用 Edge** 入口，并检查 `http://127.0.0.1:9333` 连接。首次使用需在新电脑登录招聘网站。
+
+已有网申执行环境的用户只需这一步；新用户继续按下文安装执行程序。详情及自定义目录见 [Windows Edge 部署说明](docs/windows-edge-setup.md)。
+
 ### 1. 安装
 
 以 Codex 为例，将仓库安装到 [个人技能目录](https://developers.openai.com/codex/skills/)；本地检查需要 Python 3.11。
