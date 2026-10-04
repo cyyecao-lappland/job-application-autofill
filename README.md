@@ -1,6 +1,6 @@
-# Job Application Autofill · 网申 Skill
+# Job Application Autofill · Agent 版
 
-本分支 `legacy/edge-direct` 保留 2026-09-20 版本的直接浏览器操作流程，并收录旧工作目录中已有的 Edge 插件、桥接器及 CDP 适配器。默认使用 `direct-tool`，无需 LangGraph 主图或 SQLite 检查点。Edge 插件通道为本地开发版，目前支持猎聘和 BOSS 页面，配置见 [插件说明](extension/edge-via-extension/README.md)。
+本分支 `agent` 保留 2026-09-20 版本的直接浏览器操作流程，并收录旧工作目录中已有的 Edge 插件、桥接器及 CDP 适配器。默认使用 `direct-tool`，无需 LangGraph 主图或 SQLite 检查点。Edge 插件通道为本地开发版，目前支持猎聘和 BOSS 页面，配置见 [插件说明](extension/edge-via-extension/README.md)。
 
 ## 有什么用
 
@@ -33,14 +33,14 @@
 ```powershell
 $skillDir = Join-Path $env:USERPROFILE '.agents/skills/job-application-autofill'
 New-Item -ItemType Directory -Force (Split-Path $skillDir) | Out-Null
-git clone --branch legacy/edge-direct --single-branch https://github.com/cyyecao-lappland/job-application-autofill.git $skillDir
+git clone --branch agent --single-branch https://github.com/cyyecao-lappland/job-application-autofill.git $skillDir
 ```
 
 **macOS / Linux**
 
 ```sh
 mkdir -p "$HOME/.agents/skills"
-git clone --branch legacy/edge-direct --single-branch https://github.com/cyyecao-lappland/job-application-autofill.git "$HOME/.agents/skills/job-application-autofill"
+git clone --branch agent --single-branch https://github.com/cyyecao-lappland/job-application-autofill.git "$HOME/.agents/skills/job-application-autofill"
 ```
 
 已有同名 skill 时先确认版本，避免覆盖。安装后在对话中输入 `$job-application-autofill`；未识别时重启 Codex。浏览器工具和子 agent 能力由宿主提供，需确认可用。
