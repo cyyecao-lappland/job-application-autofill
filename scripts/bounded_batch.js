@@ -162,7 +162,9 @@ async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, 
       state.pendingCall = {kind:'write',id:op.id};
       if (!await checkpoint() || !left()) return state;
       try { result = await adapter.completeRecord(op, {recordRef: previous.recordRef, timeoutMs: left()}); }
-      catch (error) { result = {status: 'unknown',settled:settledReadError(error)}; }
+      catch (error) { result = {status: 'unknown',settled:settledReadError(error),
+        ...(error?.requestId ? {requestId: error.requestId} : {})}; }
+      if (result?.requestId && state.pendingCall) state.pendingCall.requestId = result.requestId;
       if (result?.status === 'written') {
         state.pendingCall = null;
         state.results[op.id] = {status: 'written-unverified', recordRef: previous.recordRef};
@@ -242,7 +244,9 @@ async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, 
     dispatched++;
     let outcome;
     try { outcome = await adapter.write(op, {timeoutMs: left()}); }
-    catch (error) { outcome = {status: 'unknown',settled:settledReadError(error)}; }
+    catch (error) { outcome = {status: 'unknown',settled:settledReadError(error),
+      ...(error?.requestId ? {requestId: error.requestId} : {})}; }
+    if (outcome?.requestId && state.pendingCall) state.pendingCall.requestId = outcome.requestId;
     // 只有明确结束且确认无副作用的失败才可清除未决标记；抛异常本身不够。
     if (outcome?.status === 'failed' && outcome.noEffect === true && outcome.settled === true) {
       state.pendingWrite = null;
@@ -330,7 +334,9 @@ async function runBoundedBatch(plan, preflight, adapter, state, now = Date.now, 
       }
       let result;
       try { result = await adapter.saveModule(module, {timeoutMs: left(saveTimeout)}); }
-      catch (error) { result = {status: 'unknown',settled:settledReadError(error)}; }
+      catch (error) { result = {status: 'unknown',settled:settledReadError(error),
+        ...(error?.requestId ? {requestId: error.requestId} : {})}; }
+      if (result?.requestId && state.pendingCall) state.pendingCall.requestId = result.requestId;
       if (result?.status === 'validation-failed' && result.settled === true) {
         state.pendingSave = null;
         state.pendingCall = null;

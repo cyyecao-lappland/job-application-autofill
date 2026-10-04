@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Job Application Autofill - Edge page channel",
+  "version": "0.1.7",
+  "description": "Runs allowlisted resume inspection and filling commands from a local bridge.",
+  "permissions": ["alarms", "scripting", "storage", "tabs"],
+  "host_permissions": [
+    "https://*.liepin.com/*",
+    "https://*.zhipin.com/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Job Application Autofill channel"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.liepin.com/*",
+        "https://*.zhipin.com/*"
+      ],
+      "js": ["page_runtime.js", "content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 # Job Application Autofill · 网申 Skill
 
+本分支 `legacy/edge-direct` 保留 2026-09-20 版本的直接浏览器操作流程，并收录旧工作目录中已有的 Edge 插件、桥接器及 CDP 适配器。默认使用 `direct-tool`，无需 LangGraph 主图或 SQLite 检查点。Edge 插件通道为本地开发版，目前支持猎聘和 BOSS 页面，配置见 [插件说明](extension/edge-via-extension/README.md)。
+
 ## 有什么用
 
 让 AI 根据你的履历资料，在招聘网站上填写教育、实习、项目、论文和获奖经历，减少重复录入。
@@ -31,14 +33,14 @@
 ```powershell
 $skillDir = Join-Path $env:USERPROFILE '.agents/skills/job-application-autofill'
 New-Item -ItemType Directory -Force (Split-Path $skillDir) | Out-Null
-git clone https://github.com/cyyecao-lappland/job-application-autofill.git $skillDir
+git clone --branch legacy/edge-direct --single-branch https://github.com/cyyecao-lappland/job-application-autofill.git $skillDir
 ```
 
 **macOS / Linux**
 
 ```sh
 mkdir -p "$HOME/.agents/skills"
-git clone https://github.com/cyyecao-lappland/job-application-autofill.git "$HOME/.agents/skills/job-application-autofill"
+git clone --branch legacy/edge-direct --single-branch https://github.com/cyyecao-lappland/job-application-autofill.git "$HOME/.agents/skills/job-application-autofill"
 ```
 
 已有同名 skill 时先确认版本，避免覆盖。安装后在对话中输入 `$job-application-autofill`；未识别时重启 Codex。浏览器工具和子 agent 能力由宿主提供，需确认可用。
@@ -108,8 +110,11 @@ zero-shot 来自运行时的三步推断：从完整履历中选择有来源的�
 | [connection_guard.py](scripts/connection_guard.py) | 记录连接尝试与未决状态 |
 | [bounded_batch.js](scripts/bounded_batch.js) | 管理批次预算、恢复和模块保存 |
 | [execute_adapter.js](scripts/execute_adapter.js) | 加载真实适配器，管理文件锁和持久状态 |
+| [safe_goto.js](scripts/safe_goto.js) | 在同一 CDP 会话中临时关闭 Runtime 后导航并恢复 |
+| [cdp_connection.js](scripts/cdp_connection.js) | 连接明确提供的回环 CDP 页面目标 |
+| [extension/edge-via-extension](extension/edge-via-extension) | 通过 Edge MV3 `scripting.executeScript` 执行白名单页面命令 |
 
-协议细节：[独立核验](references/independent-checks.md) · [执行与恢复](references/execution-contract.md) · [计划与快照格式](references/plan-schema.md)。普通用户无需手写计划或适配器。
+协议细节：[独立核验](references/independent-checks.md) · [执行与恢复](references/execution-contract.md) · [计划与快照格式](references/plan-schema.md) · [浏览器执行通道](references/browser-channels.md)。普通用户无需手写计划或适配器。
 
 ### 验证与边界
 
@@ -119,9 +124,11 @@ zero-shot 来自运行时的三步推断：从完整履历中选择有来源的�
 python -B -m unittest discover -s scripts -p "test_*.py"
 node scripts/test_bounded_batch.js
 node scripts/test_execute_adapter.js
+node scripts/test_safe_goto.js
+node scripts/test_via_extension.js
 ```
 
-发布时通过 48 项 Python 和 35 项 JavaScript 离线测试，使用虚构资料与合成适配器。脚本只用标准库；JavaScript 测试在 Node.js 24 验证，集成测试要求 `python` 命令可用。
+当前离线验证通过 56 项 Python 检查、41 项 JavaScript 行为/持久化检查，以及两条浏览器通道的独立合成检查；测试使用虚构资料、合成浏览器或回环桥接服务，不连接真实招聘页面。脚本只用标准库；JavaScript 测试在 Node.js 24 验证，集成测试要求 `python` 命令可用。
 
 预检通过只说明提供的计划与证据满足检查条件，不证明事实真实、网页已保存或所有网站兼容；脚本也不能拦截绕过执行器的直接工具调用。提交前应核对实际申请内容。贡献代码或报告问题时仅附虚构资料，个人 JSON、截图和运行记录留在仓库外。
 

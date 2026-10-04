@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Job Application Autofill channel</title>
+<style>
+  body { font: 14px system-ui, sans-serif; max-width: 620px; margin: 32px auto; padding: 0 16px; }
+  label { display: block; margin: 16px 0 6px; font-weight: 600; }
+  input { box-sizing: border-box; width: 100%; padding: 8px; }
+  button { margin-top: 18px; padding: 8px 14px; }
+  #status { margin-left: 10px; }
+</style>
+<h1>本地回填通道</h1>
+<p>只连接本机桥接服务；页面命令由扩展白名单控制，扩展不提供正式提交命令。</p>
+<form id="form">
+  <label for="bridgeUrl">Bridge URL</label>
+  <input id="bridgeUrl" required value="http://127.0.0.1:43127">
+  <label for="token">Bridge token</label>
+  <input id="token" type="password" required autocomplete="off">
+  <button type="submit">保存</button><span id="status" role="status"></span>
+</form>
+<script src="options.js"></script>
